@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { makeSparsePool, makeTestPool } from './__fixtures__/pool'
+import { makeFilterProbePool, makeSparsePool, makeTestPool } from './__fixtures__/pool'
 import { nextPair } from './selector'
 import { ROUNDS, type Choice } from './types'
 
@@ -77,13 +77,21 @@ describe('nextPair', () => {
     expect([...axes].sort()).toEqual([0, 1, 2, 3])
   })
 
-  it('좌우 배치가 한쪽으로 고정되지 않는다', () => {
-    // 항상 같은 순서로 놓으면 왼쪽을 고르는 습관이 결과를 오염시킨다.
-    const leftIsLower = SEEDS.map((seed) => {
-      const pair = nextPair(pool, [], seed)
-      return pair.left < pair.right
-    })
-    expect(new Set(leftIsLower).size).toBe(2)
+})
+
+describe('nextPair 축 격리 필터', () => {
+  it('점수가 더 높아도 격리되지 않은 쌍은 내보내지 않는다', () => {
+    // 이 풀에서 최고점 쌍(gap 2, confound 0, score 4)은 격리에 실패하고,
+    // 격리된 쌍(gap 3, confound 3)은 점수가 낮다. 필터가 없으면 전자가 뽑힌다.
+    const probe = makeFilterProbePool()
+    const choices: Choice[] = []
+
+    for (let i = 0; i < ROUNDS; i++) {
+      const pair = nextPair(probe, choices, 11)
+      const gap = Math.abs(probe[pair.left].axes[pair.axis] - probe[pair.right].axes[pair.axis])
+      expect(gap).toBeGreaterThanOrEqual(3)
+      choices.push({ winner: pair.left, loser: pair.right })
+    }
   })
 })
 

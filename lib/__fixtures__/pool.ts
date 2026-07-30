@@ -32,6 +32,33 @@ export function makeSparsePool(): Work[] {
   return works
 }
 
+/**
+ * `gap >= 3` 필터가 없으면 선택기가 틀린 쌍을 고르도록 설계된 풀.
+ *
+ * 세 종류의 작품만 쓴다. A=[-2,0,0,0], B=[-1,1,1,1], C=[1,1,1,1].
+ * - A-C: 축 0에서 gap 3, confound 3 → score 3 (필터 통과)
+ * - B-C: 축 0에서 gap 2, confound 0 → score 4 (점수는 높지만 격리 실패)
+ *
+ * 점수만 보면 B-C가 이긴다. 필터가 살아 있어야만 A-C가 선택된다.
+ * 조밀한 makeTestPool에서는 최고점 쌍이 이미 gap 4·confound 0이라 필터가 있으나 마나였다.
+ *
+ * A와 C는 매 라운드 한 개씩 소진되므로 12라운드를 버티도록 14개씩 넣는다.
+ * 부족하면 후반 라운드가 완화 단계로 떨어져 필터가 아니라 소진을 테스트하게 된다.
+ */
+export function makeFilterProbePool(): Work[] {
+  const shapes: [Axes, number][] = [
+    [[-2, 0, 0, 0], 14],
+    [[-1, 1, 1, 1], 4],
+    [[1, 1, 1, 1], 14],
+  ]
+  const works: Work[] = []
+  let id = 1
+  for (const [axes, count] of shapes) {
+    for (let copy = 0; copy < count; copy++) works.push(work(id++, [...axes] as Axes))
+  }
+  return works
+}
+
 export function makeTestPool(): Work[] {
   const works: Work[] = []
   let id = 1
