@@ -33,8 +33,14 @@ export default async function ResultPage({ params }: { params: Promise<{ code: s
     <main className="mx-auto flex min-h-dvh max-w-2xl flex-col gap-10 px-4 py-12">
       <header className="text-center">
         <p className="text-6xl font-black tracking-tight">{code}</p>
-        <h1 className="mt-3 text-3xl font-bold">{type.name}</h1>
-        <p className="mx-auto mt-4 max-w-md leading-relaxed text-neutral-300">{type.description}</p>
+        {/* 유형은 사람이 아니라 이야기의 결이다. 이름 위에서 그 사실을 먼저 말한다. */}
+        <p className="mt-4 text-sm text-neutral-500">당신이 자꾸 고르는 이야기</p>
+        <h1 className="mt-1 text-3xl font-bold">{type.name}</h1>
+        {/* 한글은 기본값이 음절 단위 줄바꿈이라 "뒤집힙니다."가 "뒤집힙 / 니다."로 쪼개진다.
+            break-keep(word-break: keep-all)이 어절을 통째로 넘긴다. */}
+        <p className="mx-auto mt-4 max-w-md break-keep leading-relaxed text-neutral-300">
+          {type.description}
+        </p>
       </header>
 
       {/* useSearchParams를 쓰므로 Suspense 경계가 필요하다. */}
@@ -44,12 +50,12 @@ export default async function ResultPage({ params }: { params: Promise<{ code: s
 
       <section className="grid grid-cols-2 gap-3 text-center">
         <div className="rounded-xl bg-neutral-900 p-4">
-          <p className="text-xs text-neutral-500">잘 맞는 유형</p>
+          <p className="text-xs text-neutral-500">가까운 이야기</p>
           <p className="mt-1 font-bold">{compatible.name}</p>
           <p className="text-sm text-neutral-500">{compatibleCode(code)}</p>
         </div>
         <div className="rounded-xl bg-neutral-900 p-4">
-          <p className="text-xs text-neutral-500">상극 유형</p>
+          <p className="text-xs text-neutral-500">정반대 이야기</p>
           <p className="mt-1 font-bold">{opposite.name}</p>
           <p className="text-sm text-neutral-500">{oppositeCode(code)}</p>
         </div>

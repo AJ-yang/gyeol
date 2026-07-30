@@ -31,7 +31,7 @@ export default async function Image({ params }: { params: Promise<{ code: string
         }}
       >
         <div style={{ fontSize: 150, letterSpacing: '-0.04em', lineHeight: 1 }}>{code}</div>
-        <div style={{ fontSize: 58, marginTop: 24 }}>{type?.name ?? '서사 정체성 유형'}</div>
+        <div style={{ fontSize: 58, marginTop: 24 }}>{type?.name ?? '이야기 취향 유형'}</div>
         <div style={{ fontSize: 28, color: '#a3a3a3', marginTop: 40 }}>Story Compass</div>
       </div>
     ),
