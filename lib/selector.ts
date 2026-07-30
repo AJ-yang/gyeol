@@ -10,14 +10,26 @@ export type Pair = {
 
 const MIN_GAPS = [3, 2, 0] as const
 
-export function nextPair(pool: Work[], choices: Choice[], seed: number): Pair {
+/**
+ * 다음에 보여줄 쌍을 고른다. `excluded`는 사용자가 "몰라요"를 누른 작품이며 후보에서 빠진다.
+ *
+ * 반환값이 `null`이면 제외가 쌓여 남은 작품으로는 쌍을 만들 수 없다는 뜻이다. 사용자가
+ * 도달할 수 있는 정상 상태이므로 throw하지 않는다 — 호출자가 화면을 그려야 한다.
+ * 반면 풀 자체가 작은 것은 설정 버그라서 계속 throw한다.
+ */
+export function nextPair(
+  pool: Work[],
+  choices: Choice[],
+  seed: number,
+  excluded: ReadonlySet<number>,
+): Pair | null {
   // 한 작품은 세션당 한 번만 쓰므로 12라운드에 24개가 필요하다. 부족하면 마지막
   // 라운드에서 터지는 대신 첫 호출에서 바로 실패해야 원인이 드러난다.
   if (pool.length < ROUNDS * 2) {
     throw new Error(`pool too small: ${pool.length} works, need at least ${ROUNDS * 2}`)
   }
 
-  const used = new Set<number>()
+  const used = new Set<number>(excluded)
   const info = [0, 0, 0, 0]
   for (const choice of choices) {
     used.add(choice.winner)
@@ -49,7 +61,7 @@ export function nextPair(pool: Work[], choices: Choice[], seed: number): Pair {
     }
   }
 
-  throw new Error('no available pair')
+  return null
 }
 
 function bestPair(pool: Work[], available: number[], axis: number, minGap: number): [number, number] | null {

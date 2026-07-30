@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import worksData from '../data/works.json'
+import { mustPair } from './__fixtures__/must-pair'
 import { checkPool } from './pool-health'
 import { score } from './scoring'
-import { nextPair } from './selector'
 import { ROUNDS, type Choice, type Work } from './types'
 
 /**
@@ -21,7 +21,7 @@ function playSession(seed: number) {
   const choices: Choice[] = []
   const pairs = []
   for (let round = 0; round < ROUNDS; round++) {
-    const pair = nextPair(pool, choices, seed)
+    const pair = mustPair(pool, choices, seed)
     pairs.push(pair)
     const pickLeft = (seed * 31 + round * 17) % 2 === 0
     choices.push(
