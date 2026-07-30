@@ -32,12 +32,22 @@ export function compatibleCode(code: string): string {
   return flip(code, [0, 1, 3])
 }
 
+/**
+ * 코드를 검증한 뒤 지정한 축의 글자를 뒤집는다.
+ *
+ * 검증하는 이유: 코드는 `/r/[code]` 경로에서 오는 사용자 입력이다. 검증 없이
+ * `ch === neg ? pos : neg`만 쓰면 소문자 URL 같은 비정상 입력이 전부 첫 글자로 접혀
+ * 그럴듯하지만 완전히 틀린 상극 유형을 조용히 내놓는다.
+ */
 function flip(code: string, axes: readonly number[]): string {
+  if (code.length !== AXIS_LETTERS.length) throw new Error(`invalid type code: ${code}`)
+
   return code
     .split('')
     .map((ch, a) => {
-      if (!axes.includes(a)) return ch
       const [neg, pos] = AXIS_LETTERS[a]
+      if (ch !== neg && ch !== pos) throw new Error(`invalid type code: ${code}`)
+      if (!axes.includes(a)) return ch
       return ch === neg ? pos : neg
     })
     .join('')

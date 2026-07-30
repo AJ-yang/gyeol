@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { makeTestPool } from './__fixtures__/pool'
+import { makeSparsePool, makeTestPool } from './__fixtures__/pool'
 import { nextPair } from './selector'
 import { ROUNDS, type Choice } from './types'
 
 const pool = makeTestPool()
+const SEEDS = Array.from({ length: 100 }, (_, i) => i + 1)
 
 /** 시드를 주고 12라운드를 끝까지 돌린다. 매 라운드 왼쪽을 고른다. */
 function playThrough(seed: number) {
@@ -59,8 +60,53 @@ describe('nextPair', () => {
     expect(playThrough(5).pairs).toEqual(playThrough(5).pairs)
   })
 
-  it('다른 시드는 다른 첫 문항을 낸다', () => {
-    const first = new Set([1, 2, 3, 4, 5, 6, 7, 8].map((s) => JSON.stringify(nextPair(pool, [], s))))
-    expect(first.size).toBeGreaterThan(1)
+  it('시드마다 첫 문항의 작품 조합이 실제로 달라진다', () => {
+    // JSON.stringify로 비교하면 좌우 배치만 뒤집혀도 통과한다. 그러면 셔플이 죽어
+    // 전 세션이 같은 12문항을 받는 상태를 놓친다. 작품 조합 자체를 봐야 한다.
+    const questions = new Set(
+      SEEDS.map((seed) => {
+        const pair = nextPair(pool, [], seed)
+        return [pair.left, pair.right].sort((a, b) => a - b).join(',')
+      }),
+    )
+    expect(questions.size).toBeGreaterThan(20)
+  })
+
+  it('첫 문항의 목표 축이 시드에 따라 네 축을 모두 커버한다', () => {
+    const axes = new Set(SEEDS.map((seed) => nextPair(pool, [], seed).axis))
+    expect([...axes].sort()).toEqual([0, 1, 2, 3])
+  })
+
+  it('좌우 배치가 한쪽으로 고정되지 않는다', () => {
+    // 항상 같은 순서로 놓으면 왼쪽을 고르는 습관이 결과를 오염시킨다.
+    const leftIsLower = SEEDS.map((seed) => {
+      const pair = nextPair(pool, [], seed)
+      return pair.left < pair.right
+    })
+    expect(new Set(leftIsLower).size).toBe(2)
+  })
+})
+
+describe('nextPair 완화 단계', () => {
+  it('gap 3 쌍이 없는 풀에서는 완화 단계로 내려가 12라운드를 끝낸다', () => {
+    // 조밀한 makeTestPool은 1단계에서 항상 완벽한 쌍을 찾아 MIN_GAPS의 나머지 티어가
+    // 죽은 코드로 남는다. 실제 풀은 이보다 성기므로 완화 경로가 살아 있어야 한다.
+    const sparse = makeSparsePool()
+    const choices: Choice[] = []
+
+    for (let i = 0; i < ROUNDS; i++) {
+      const pair = nextPair(sparse, choices, 11)
+      const gap = Math.abs(sparse[pair.left].axes[pair.axis] - sparse[pair.right].axes[pair.axis])
+      expect(gap).toBeGreaterThanOrEqual(2)
+      choices.push({ winner: pair.left, loser: pair.right })
+    }
+
+    const seen = choices.flatMap((c) => [c.winner, c.loser])
+    expect(new Set(seen).size).toBe(ROUNDS * 2)
+  })
+
+  it('12라운드를 채울 수 없는 풀은 진행 중이 아니라 즉시 실패한다', () => {
+    const tooSmall = makeSparsePool().slice(0, ROUNDS * 2 - 1)
+    expect(() => nextPair(tooSmall, [], 11)).toThrow(/pool too small/)
   })
 })

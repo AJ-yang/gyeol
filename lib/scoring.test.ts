@@ -59,4 +59,14 @@ describe('oppositeCode / compatibleCode', () => {
     expect(compatibleCode('CATW')).toBe('EQTL')
     expect(compatibleCode('EQSL')).toBe('CASW')
   })
+
+  it('비정상 코드는 그럴듯한 오답 대신 예외를 낸다', () => {
+    // 코드는 /r/[code] 경로에서 오는 사용자 입력이다. 검증이 없으면 소문자 URL이
+    // 전부 첫 글자로 접혀 'catw' → 'CATW' 같은 조용한 오답이 나온다.
+    expect(() => oppositeCode('catw')).toThrow(/invalid type code/)
+    expect(() => oppositeCode('C-TW')).toThrow(/invalid type code/)
+    expect(() => oppositeCode('CAT')).toThrow(/invalid type code/)
+    expect(() => oppositeCode('')).toThrow(/invalid type code/)
+    expect(() => compatibleCode('catw')).toThrow(/invalid type code/)
+  })
 })

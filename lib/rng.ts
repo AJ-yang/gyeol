@@ -1,5 +1,14 @@
-/** mulberry32. 32비트 시드로 결정론적 [0,1) 수열을 낸다. */
+/**
+ * mulberry32. 32비트 정수 시드로 결정론적 [0,1) 수열을 낸다.
+ *
+ * 소수 시드를 거부하는 이유: `>>> 0`은 소수부를 잘라내므로 `Math.random()`을 그대로
+ * 넘기면 모든 세션이 시드 0으로 붕괴해 전원이 같은 문항을 받는다. 조용히 무너지는 대신
+ * 개발 시점에 터지게 한다. 호출자는 `Math.floor(Math.random() * 2 ** 31)`을 넘겨야 한다.
+ */
 export function makeRng(seed: number): () => number {
+  if (!Number.isInteger(seed)) {
+    throw new TypeError(`makeRng seed must be an integer, got ${seed}`)
+  }
   let s = seed >>> 0
   return () => {
     s = (s + 0x6d2b79f5) >>> 0

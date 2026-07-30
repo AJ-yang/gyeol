@@ -1,5 +1,5 @@
 import { makeRng, seededShuffle } from './rng'
-import type { Choice, Work } from './types'
+import { ROUNDS, type Choice, type Work } from './types'
 
 export type Pair = {
   left: number
@@ -11,6 +11,12 @@ export type Pair = {
 const MIN_GAPS = [3, 2, 0] as const
 
 export function nextPair(pool: Work[], choices: Choice[], seed: number): Pair {
+  // 한 작품은 세션당 한 번만 쓰므로 12라운드에 24개가 필요하다. 부족하면 마지막
+  // 라운드에서 터지는 대신 첫 호출에서 바로 실패해야 원인이 드러난다.
+  if (pool.length < ROUNDS * 2) {
+    throw new Error(`pool too small: ${pool.length} works, need at least ${ROUNDS * 2}`)
+  }
+
   const used = new Set<number>()
   const info = [0, 0, 0, 0]
   for (const choice of choices) {
