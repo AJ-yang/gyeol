@@ -33,7 +33,8 @@ export default function PlayPage() {
     const next = [...choices, { winner, loser }]
     if (next.length >= ROUNDS) {
       const { code } = score(POOL, next)
-      router.push(`/r/${code}?p=${encodeChoices(next)}`)
+      // trailingSlash 설정을 켰으므로 정적 경로도 슬래시로 끝난다.
+      router.push(`/r/${code}/?p=${encodeChoices(next)}`)
       return
     }
     setChoices(next)

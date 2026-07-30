@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Story Compass
 
-## Getting Started
+영화·드라마 두 편 중 하나를 고르는 일을 열두 번 반복하면, 그 선택으로부터 **서사 정체성 유형**을 네 글자 코드로 판정해 보여주는 웹 서비스입니다.
 
-First, run the development server:
+**→ [aj-yang.github.io/story-compass](https://aj-yang.github.io/story-compass/)**
+
+## 네 개의 축
+
+| 축 | 양극 | 글자 |
+|---|---|---|
+| 1 | 세계를 바꾼다 ↔ 세계를 견딘다 | `C` / `E` |
+| 2 | 답을 찾는다 ↔ 질문 속에 산다 | `A` / `Q` |
+| 3 | 함께 간다 ↔ 혼자 간다 | `T` / `S` |
+| 4 | 이겨서 얻는다 ↔ 잃으며 깨닫는다 | `W` / `L` |
+
+네 글자를 이어 붙이면 `EQSL`, `CATW` 같은 코드가 되고 총 16유형입니다.
+
+## 어떻게 판정하나
+
+토너먼트 브라켓을 쓰지 않습니다. 브라켓은 우승자를 뽑는 데 최적화된 구조라 라운드가 진행될수록 생존 작품이 한쪽 취향으로 쏠려서, 후반 매치가 새 정보를 거의 주지 못합니다.
+
+대신 매 라운드 **아직 안 갈린 축을 겨냥해** 다음 쌍을 고릅니다. 목표 축에서는 크게 벌어지고 나머지 세 축에서는 붙어 있는 쌍만 내보내기 때문에, 열두 번의 선택이 낭비 없이 네 축에 꽂힙니다. 이 축 격리가 알고리즘의 전부입니다 — 한 쌍이 네 축 모두에서 갈리면 왜 그걸 골랐는지 해석할 수 없습니다.
+
+점수는 이긴 작품과 진 작품의 **축 점수 차이**를 누적합니다. 비슷한 둘 중에 고른 건 약한 신호로, 정반대인 둘 중에 고른 건 강한 신호로 잡힙니다.
+
+## 구조
+
+로직 전부가 순수 함수 몇 개에 들어 있고 나머지는 표현 계층입니다.
+
+| 파일 | 역할 |
+|---|---|
+| `lib/selector.ts` | 적응형 페어 선택 (목표 축 결정 + 축 격리) |
+| `lib/scoring.ts` | 선택 기록 → 축 점수 → 유형 코드 |
+| `lib/payload.ts` | 선택 기록 ↔ URL 문자열 인코딩 |
+| `lib/pool-health.ts` | 작품 풀이 축 격리 쌍을 충분히 만드는지 검증 |
+| `data/works.json` | 작품 풀 240개 (스크립트 생성, 커밋 대상) |
+
+데이터베이스가 없습니다. 결과는 URL에 실린 선택 기록으로 재현합니다.
+
+## 개발
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm test
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 작품 풀 갱신
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+TMDB 약관상 데이터 캐시 상한이 6개월이라 주기적으로 갱신해야 합니다. `.env.local`에 `TMDB_API_KEY`가 필요합니다 (themoviedb.org에서 무료 발급).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run fetch:candidates   # TMDB → data/candidates.json
+# data/labels.json 의 축 점수를 채운 뒤
+npm run build:pool         # → data/works.json
+```
 
-## Learn More
+> **배열 순서를 바꾸거나 중간 항목을 제거하지 마세요.** 공유 URL이 배열 인덱스를 담기 때문에, 순서가 바뀌면 이미 공유된 링크가 깨지는 게 아니라 *조용히 다른 작품을 가리킵니다.* 갱신은 제자리 덮어쓰기와 끝에 추가만 허용합니다.
 
-To learn more about Next.js, take a look at the following resources:
+## 배포
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run deploy:pages
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+정적 빌드(`out/`)를 만들어 `gh-pages` 브랜치로 밀어 넣습니다.
 
-## Deploy on Vercel
+## TMDB
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This product uses the TMDB API but is not endorsed or certified by TMDB.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+비상업 용도로만 운영합니다. 광고를 붙이려면 TMDB와 별도 상업 계약이 필요합니다.

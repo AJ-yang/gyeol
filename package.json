@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "build:pool": "tsx scripts/build-pool.ts",
-    "fetch:candidates": "tsx --env-file=.env.local scripts/fetch-candidates.ts"
+    "fetch:candidates": "tsx --env-file=.env.local scripts/fetch-candidates.ts",
+    "build:pages": "PAGES_BASE_PATH=/story-compass PAGES_SITE_URL=https://AJ-yang.github.io/story-compass next build && tsx scripts/postbuild-pages.ts",
+    "deploy:pages": "npm run build:pages && bash scripts/deploy-pages.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
