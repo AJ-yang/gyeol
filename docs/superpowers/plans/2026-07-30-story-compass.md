@@ -1028,6 +1028,13 @@ git add lib/pool-health.ts lib/pool-health.test.ts && git commit -m "feat: add p
 
 ---
 
+> **실행 중 변경 (2026-07-30).** Task 9와 10은 아래 문서와 다르게 구현했다. LLM 라벨링을
+> 스크립트에서 떼어내 `scripts/fetch-candidates.ts`(TMDB 수집 → `data/candidates.json`)와
+> `scripts/build-pool.ts`(`candidates.json` + 손으로 쓴 `data/labels.json` → `works.json`)로
+> 나눴다. 라벨링은 세션 안에서 직접 하므로 **Anthropic API 키가 필요 없다.** 6개월 갱신이
+> 제목·포스터만 제자리에서 덮어쓰고 축 점수는 유지하므로 라벨링은 애초에 일회성 작업이다.
+> TMDB 키는 여전히 필요하다.
+
 ## Task 9: 작품 풀 생성 스크립트
 
 **Files:**
