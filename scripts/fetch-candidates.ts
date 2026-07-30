@@ -14,7 +14,17 @@ const TMDB_API_KEY = process.env.TMDB_API_KEY
 
 export type Candidate = Pick<Work, 'id' | 'media' | 'title' | 'year' | 'poster'> & { korean: boolean }
 
-async function tmdb(path: string, params: Record<string, string>): Promise<any> {
+/** discover 응답에서 실제로 쓰는 필드만 추린 형태. 매체에 따라 제목·날짜 키가 다르다. */
+type DiscoverResult = {
+  id: number
+  poster_path: string | null
+  title?: string
+  name?: string
+  release_date?: string
+  first_air_date?: string
+}
+
+async function tmdb(path: string, params: Record<string, string>): Promise<{ results?: DiscoverResult[] }> {
   const url = new URL(`https://api.themoviedb.org/3${path}`)
   url.searchParams.set('api_key', TMDB_API_KEY!)
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
