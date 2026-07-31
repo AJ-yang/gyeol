@@ -22,11 +22,28 @@ const PER_GYEOL = 2
  * 전부 알아볼 만한 작품이 되고, 드라마를 찾는 사람은 검색으로 직접 추가할 수 있다.
  */
 export function buildGyeolPool(catalog: Catalog, gyeolTypes: Gyeol[]): CatalogEntry[] {
+  const vocabularyIndex = new Map(catalog.vocabulary.map((k, i) => [k, i]))
+  const keywordsOf = new Map(
+    gyeolTypes.map((g) => [
+      g.id,
+      new Set(
+        g.keywords.map((k) => vocabularyIndex.get(k)).filter((i): i is number => i !== undefined),
+      ),
+    ]),
+  )
+
   // 작품마다 단독 1위 결을 미리 구한다. 만 편이 넘으므로 한 번만 돈다.
   const byGyeol = new Map<string, CatalogEntry[]>()
   for (const work of catalog.works) {
     const top = matchGyeol([work], catalog, gyeolTypes)[0]
     if (top === undefined || top.score <= 0) continue
+
+    // 조건 키워드가 하나도 없는데 장르 보정(0.4)만으로 1위가 된 작품은 그 결을
+    // 대표하지 못한다. 카탈로그의 39%가 그런 상태이고, 「티격태격의 결」은
+    // 1,380편 중 90%가 가짜라 romcom 키워드가 없는 「레드슈즈」가 대표작으로
+    // 올라와 있었다. 그 결과 이 결은 시뮬레이션에서 한 번도 1위를 못 했다.
+    if (!work.k.some((k) => keywordsOf.get(top.id)!.has(k))) continue
+
     const bucket = byGyeol.get(top.id)
     if (bucket) bucket.push(work)
     else byGyeol.set(top.id, [work])

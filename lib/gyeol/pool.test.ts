@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildGyeolPool, buildPickPool } from './pool'
 import { makeRng } from '../rng'
+import { GENRE_INDEX } from './genres'
 import { workKey, type Catalog, type CatalogEntry, type Gyeol } from './types'
 
 const VOCAB = ['revenge', 'romance', 'zombie']
@@ -75,6 +76,20 @@ describe('buildGyeolPool', () => {
 
   it('같은 입력에 같은 결과를 낸다', () => {
     expect(buildGyeolPool(CATALOG, TYPES)).toEqual(buildGyeolPool(CATALOG, TYPES))
+  })
+
+  it('장르만 스친 작품을 대표작으로 뽑지 않는다', () => {
+    // 조건 키워드가 하나도 없는데 장르 보정만으로 1위가 되는 작품이 카탈로그의
+    // 39%다. 「티격태격의 결」은 1,380편 중 90%가 그런 가짜였고, 그래서 후보에
+    // romcom 키워드가 없는 「레드슈즈」가 대표작으로 올라왔다.
+    const genreOnly: CatalogEntry = {
+      i: 999, m: 0, t: '장르만', y: 2020, p: '999.jpg',
+      g: [GENRE_INDEX['범죄']], k: [], ko: 1,
+    }
+    // 이 작품이 카탈로그 맨 앞에 있어도 뽑히면 안 된다
+    const catalog: Catalog = { ...CATALOG, works: [genreOnly, ...WORKS] }
+    const pool = buildGyeolPool(catalog, TYPES)
+    expect(pool.map(workKey)).not.toContain(workKey(genreOnly))
   })
 })
 
