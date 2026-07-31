@@ -9,16 +9,15 @@ export default function LandingPage() {
           <br />
           끌리는가
         </h1>
-        {/* 한글은 어절 중간에서도 줄이 바뀌므로 break-keep으로 어절을 지킨다. */}
         <p className="mt-5 break-keep leading-relaxed text-neutral-400">
-          영화와 드라마 두 편 중 하나를 고르는 일을 열두 번.
-          <br />그 선택이 당신의 이야기 취향을
-          <br />네 글자로 말해줍니다.
+          재미있게 본 영화와 드라마를 고르면
+          <br />
+          당신의 이야기 취향에 이름을 붙여드립니다.
         </p>
       </div>
 
       <Link
-        href="/play"
+        href="/pick/"
         className="rounded-full bg-white px-8 py-4 text-lg font-bold text-black transition hover:bg-neutral-200"
       >
         시작하기
