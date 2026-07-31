@@ -47,4 +47,4 @@ next-env.d.ts
 # 재생성 가능한 TMDB 원본과 색인
 data/*.raw.json
 public/catalog.json
-public/rec/
+public/recommendations.json

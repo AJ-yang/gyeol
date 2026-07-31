@@ -1,14 +1,18 @@
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { gzipSync } from 'node:zlib'
 import type { Catalog } from '../lib/gyeol/types'
 
 /**
- * 작품별 TMDB 추천을 public/rec/<m>-<id>.json으로 굽는다.
+ * 작품별 TMDB 추천을 public/recommendations.json 하나로 굽는다.
  *
- * 파일을 쪼개는 이유는 클라이언트가 고른 것만 받게 하기 위해서다. 하나로
- * 합치면 수백 KB를 통째로 내려받아야 한다.
+ * 처음에는 작품마다 파일을 쪼개 클라이언트가 고른 것만 받게 하려 했다.
+ * 재보니 전체를 합쳐도 gzip 430KB로, 이미 통째로 내려보내는 색인(607KB)보다
+ * 작다. 반면 분할은 gh-pages force push에 12,595개 파일을 매번 밀어넣는
+ * 비용이 실재한다. 400KB는 퀴즈가 끝난 뒤 결과 화면에서 지연 로드하면 된다.
  *
  * 추천 대상은 색인 안에 있는 작품으로 제한한다. 색인 밖 작품은 제목도
- * 포스터도 없어 화면에 그릴 수 없다.
+ * 포스터도 없어 화면에 그릴 수 없다. 남은 추천이 없는 작품은 키를 아예
+ * 담지 않는다 — 없으면 없는 것으로 읽힌다.
  */
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 if (!TMDB_API_KEY) throw new Error('TMDB_API_KEY not set — .env.local을 확인하라')
@@ -37,7 +41,7 @@ async function recommendationsOf(media: 0 | 1, id: number, attempt = 0): Promise
 async function main() {
   const catalog = JSON.parse(readFileSync('public/catalog.json', 'utf8')) as Catalog
   const known = new Set(catalog.works.map((w) => `${w.m}:${w.i}`))
-  mkdirSync('public/rec', { recursive: true })
+  const out: Record<string, number[]> = {}
 
   let written = 0
   let empty = 0
@@ -54,17 +58,21 @@ async function main() {
       kept += ids.length
       dropped += all.length - ids.length
       if (ids.length === 0) empty += 1
-      writeFileSync(`public/rec/${work.m}-${work.i}.json`, JSON.stringify(ids))
+      else out[`${work.m}-${work.i}`] = ids
       written += 1
     })
     process.stderr.write(`\r  ${written}/${catalog.works.length}`)
   }
   process.stderr.write('\n')
 
+  const json = JSON.stringify(out)
+  writeFileSync('public/recommendations.json', json)
+
   const total = kept + dropped
-  console.log(`추천 ${written}건 → public/rec/`)
-  console.log(`  추천이 하나도 안 남은 작품 ${empty}건 (${((100 * empty) / written).toFixed(1)}%)`)
+  console.log(`추천 ${written}건 조회 → public/recommendations.json`)
+  console.log(`  담긴 작품 ${Object.keys(out).length}개 / 추천이 하나도 안 남아 제외 ${empty}건 (${((100 * empty) / written).toFixed(1)}%)`)
   console.log(`  색인 안 추천 ${kept}건 / 색인 밖이라 버린 것 ${dropped}건 (유지율 ${((100 * kept) / Math.max(total, 1)).toFixed(1)}%)`)
+  console.log(`  raw ${(json.length / 1024).toFixed(0)}KB / gzip ${(gzipSync(json).length / 1024).toFixed(0)}KB`)
 }
 
 main()
