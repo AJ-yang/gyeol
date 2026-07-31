@@ -4,6 +4,7 @@
 import { Suspense, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { ShareCardButton } from '@/components/ShareCardButton'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
 import { matchGyeol } from '@/lib/gyeol/match'
 import { decodePicks } from '@/lib/gyeol/payload'
@@ -100,7 +101,16 @@ function Result() {
         )}
       </section>
 
-      <div className="flex justify-center">
+      {/*
+        공유가 이 서비스가 퍼지는 유일한 경로라 결과 바로 아래, 다시 하기보다
+        위에 둔다. 카드에는 고른 작품의 포스터가 들어간다.
+      */}
+      <div className="flex flex-col items-center gap-5">
+        <ShareCardButton
+          gyeolName={state.gyeol.name}
+          description={state.gyeol.description}
+          picks={state.picks}
+        />
         <Link href="/pick/" className="text-sm text-neutral-400 underline">
           다시 하기
         </Link>
