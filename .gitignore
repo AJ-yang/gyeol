@@ -43,3 +43,8 @@ next-env.d.ts
 
 # 임시 실험 스크립트
 *.tmp.ts
+
+# 재생성 가능한 TMDB 원본과 색인
+data/*.raw.json
+public/catalog.json
+public/rec/
