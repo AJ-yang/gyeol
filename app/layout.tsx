@@ -6,11 +6,11 @@ export const metadata: Metadata = {
   // og:image는 절대 URL이어야 카카오톡·인스타 크롤러가 읽는다.
   // 없으면 localhost로 박혀 공유 미리보기가 통째로 깨진다.
   metadataBase: new URL(process.env.PAGES_SITE_URL ?? 'http://localhost:3100'),
-  title: 'Story Compass — 당신은 어떤 이야기에 끌리는가',
-  description: '영화와 드라마 12번의 선택으로 알아보는 이야기 취향 유형',
+  title: '결 — 당신은 어떤 이야기에 끌리는가',
+  description: '재미있게 본 작품을 고르면 당신의 이야기 취향에 이름을 붙여드립니다',
   openGraph: {
-    title: 'Story Compass — 당신은 어떤 이야기에 끌리는가',
-    description: '영화와 드라마 12번의 선택으로 알아보는 이야기 취향 유형',
+    title: '결 — 당신은 어떤 이야기에 끌리는가',
+    description: '재미있게 본 작품을 고르면 당신의 이야기 취향에 이름을 붙여드립니다',
     type: 'website',
   },
 }
