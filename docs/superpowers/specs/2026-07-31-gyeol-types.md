@@ -266,7 +266,9 @@ PRD 4절대로 **키워드에 큰 가중, 장르에 작은 가중**을 준다. `
 **이 수치는 실제보다 보수적이다.** 시뮬레이션은 무작위로 10편을 골랐는데, 실제 사용자는 취향대로 고르므로 신호가 한쪽으로 모여 더 뾰족하게 갈린다. 무작위 선택으로도 1위가 16.6%에 그친다면 실사용에서는 충분히 분산된다.
 
 ## 미해결
-- ~~조건 키워드 중 일부는 미관측.~~ **해소됨.** 조건에 쓴 키워드 123개를 TMDB `/search/keyword`로 전수 검사해 118개 실존을 확인했다. 없던 5개(`alternate reality`, `self discovery`, `generational conflict`, `slapstick`, `feel good`)는 실존하는 대체어(`alternate timeline`, `self-discovery`, `dysfunctional family`, `slapstick comedy`, `heartwarming`)로 교체했다.
+- ~~조건 키워드 중 일부는 미관측.~~ **해소됨.** 1차로 123개를 검사해 118개 실존을 확인하고 없던 5개(`alternate reality`, `self discovery`, `generational conflict`, `slapstick`, `feel good`)를 대체어(`alternate timeline`, `self-discovery`, `dysfunctional family`, `slapstick comedy`, `heartwarming`)로 교체했다.
+
+  구현 중에 1차 검사가 불완전했음이 드러났다. 25개 결의 조건 키워드 **합집합은 131종**인데 검사 목록에서 13종이 빠져 있었다 — `1980s`, `1990s`, `joseon dynasty (1392–1910)`, `based on real person` 등. 특히 `joseon dynasty (1392–1910)`는 가운데가 하이픈이 아니라 en-dash라서 조용히 깨지기 쉬운 형태이고 「옛 옷을 입은 결」의 가장 강한 한국 신호다. **131종 전수를 다시 검사해 전부 실존을 확인했다.**
 - ~~가중치 미정.~~ **해소됨.** 키워드는 IDF(`log((N+1)/(df+1))`), 장르 보정은 0.4점 고정, 결별 정규화 없음. 근거는 위 매칭 절의 표에 있다.
 - **실사용 분포 미검증.** 위 측정은 무작위 선택 기준이다. 실제 사용자의 선택은 취향으로 상관되어 있으므로 분포가 달라진다. 배포 후 실제 선택 로그로 재확인한다.
 - **한국 작품 편중 미확인.** 표본의 한국 작품 비중이 48%로 실제 카탈로그(약 7%)보다 훨씬 높다. 한국 특화 결(「옛 옷을 입은」, 「계단을 오르내리는」)이 실제 카탈로그에서도 충분히 걸리는지 다시 봐야 한다.
