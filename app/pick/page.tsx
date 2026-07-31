@@ -95,16 +95,29 @@ export default function PickPage() {
             </>
           )}
         </div>
+
+        {/*
+          검색을 헤더 안에 두어 스크롤해도 따라오게 한다. 후보 50편은 결마다
+          가장 알려진 작품을 뽑느라 영화로 채워지므로, 드라마만 보는 사람은
+          여기서 직접 넣어야 한다. 문구로 드라마를 명시하지 않으면 그 길이
+          있다는 것 자체를 모른다.
+        */}
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="드라마·영화 제목으로 검색해서 추가"
+          className="mt-2 w-full rounded-full bg-neutral-900 px-4 py-2.5 text-sm outline-none placeholder:text-neutral-500 focus:ring-2 focus:ring-white/40"
+        />
       </header>
 
-      <input
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder="찾는 작품이 없다면 제목으로 검색"
-        className="w-full rounded-full bg-neutral-900 px-4 py-2.5 text-sm outline-none placeholder:text-neutral-600 focus:ring-2 focus:ring-white/40"
-      />
-
-      {query.trim() !== '' && <WorkGrid works={searchHits} selected={selected} onToggle={toggle} />}
+      {query.trim() !== '' &&
+        (searchHits.length > 0 ? (
+          <WorkGrid works={searchHits} selected={selected} onToggle={toggle} />
+        ) : (
+          <p className="break-keep py-4 text-center text-sm text-neutral-600">
+            그 제목으로 찾지 못했어요.
+          </p>
+        ))}
 
       <WorkGrid works={pool} selected={selected} onToggle={toggle} />
     </main>
