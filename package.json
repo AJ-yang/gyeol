@@ -14,7 +14,8 @@
     "build:pages": "PAGES_BASE_PATH=/gyeol PAGES_SITE_URL=https://AJ-yang.github.io/gyeol next build && tsx scripts/postbuild-pages.ts",
     "deploy:pages": "npm run build:pages && bash scripts/deploy-pages.sh",
     "fetch:recommendations": "tsx --env-file=.env.local scripts/fetch-recommendations.ts",
-    "build:data": "npm run fetch:catalog && npm run fetch:keywords && npm run build:catalog && npm run fetch:recommendations"
+    "build:data": "npm run fetch:catalog && npm run fetch:keywords && npm run build:catalog && npm run fetch:recommendations && npm run fetch:details",
+    "fetch:details": "tsx --env-file=.env.local scripts/fetch-details.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

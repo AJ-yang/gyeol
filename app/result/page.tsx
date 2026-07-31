@@ -1,25 +1,52 @@
 // app/result/page.tsx
 'use client'
 
-import { Suspense, useMemo } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ShareCardButton } from '@/components/ShareCardButton'
+import { WorkDetailSheet } from '@/components/WorkDetailSheet'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
 import { breakdown } from '@/lib/gyeol/breakdown'
+import { recommendationSources } from '@/lib/gyeol/details'
 import { matchGyeol } from '@/lib/gyeol/match'
 import { decodePicks } from '@/lib/gyeol/payload'
 import { recommend } from '@/lib/gyeol/recommend'
 import { useCatalog, useRecommendations } from '@/lib/gyeol/use-catalog'
-import { workKey } from '@/lib/gyeol/types'
+import { workKey, type CatalogEntry } from '@/lib/gyeol/types'
 
 const RECOMMEND_COUNT = 10
+
+/**
+ * 포스터 한 장. 누르면 상세가 열린다.
+ *
+ * 제목이 포스터 안에만 있어 작은 화면에서는 읽기 어렵다. `title`을 달아
+ * 데스크톱에서는 올려두면 뜨게 하고, 스크린리더도 무엇인지 알 수 있게 한다.
+ */
+function Poster({ work, onOpen }: { work: CatalogEntry; onOpen: (work: CatalogEntry) => void }) {
+  return (
+    <button
+      onClick={() => onOpen(work)}
+      title={work.t}
+      aria-label={`${work.t} 정보 보기`}
+      className="overflow-hidden rounded-md transition hover:opacity-80 focus:ring-2 focus:ring-white/60 focus:outline-none"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`https://image.tmdb.org/t/p/w185/${work.p}`}
+        alt={work.t}
+        className="aspect-[2/3] w-full bg-neutral-800 object-cover"
+      />
+    </button>
+  )
+}
 
 function Result() {
   const params = useSearchParams()
   const payload = params.get('p')
   const { catalog } = useCatalog()
   const recommendations = useRecommendations(catalog !== null)
+  const [open, setOpen] = useState<CatalogEntry | null>(null)
 
   const state = useMemo(() => {
     if (!catalog || payload === null) return null
@@ -54,6 +81,7 @@ function Result() {
   const picked = recommendations
     ? recommend(state.picks, recommendations, catalog!.works, RECOMMEND_COUNT)
     : []
+  const pickedKeys = new Set(state.picks.map(workKey))
 
   return (
     <>
@@ -69,20 +97,14 @@ function Result() {
         <h2 className="mb-3 text-sm font-bold text-neutral-400">당신이 고른 {state.picks.length}편</h2>
         <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-8">
           {state.picks.map((work) => (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              key={workKey(work)}
-              src={`https://image.tmdb.org/t/p/w185/${work.p}`}
-              alt={work.t}
-              title={work.t}
-              className="aspect-[2/3] w-full rounded-md bg-neutral-800 object-cover"
-            />
+            <Poster key={workKey(work)} work={work} onOpen={setOpen} />
           ))}
         </div>
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-bold text-neutral-400">이런 것도 좋아할 거예요</h2>
+        <h2 className="mb-1 text-sm font-bold text-neutral-400">이런 것도 좋아할 거예요</h2>
+        <p className="mb-3 break-keep text-xs text-neutral-600">포스터를 누르면 줄거리를 볼 수 있어요</p>
         {recommendations === null ? (
           <p className="text-sm text-neutral-600">추천을 불러오는 중…</p>
         ) : picked.length === 0 ? (
@@ -90,14 +112,7 @@ function Result() {
         ) : (
           <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
             {picked.map((work) => (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                key={workKey(work)}
-                src={`https://image.tmdb.org/t/p/w185/${work.p}`}
-                alt={work.t}
-                title={work.t}
-                className="aspect-[2/3] w-full rounded-md bg-neutral-800 object-cover"
-              />
+              <Poster key={workKey(work)} work={work} onOpen={setOpen} />
             ))}
           </div>
         )}
@@ -113,6 +128,20 @@ function Result() {
           다시 하기
         </Link>
       </div>
+
+      {/*
+        추천 근거는 추천된 작품에만 붙인다. 고른 작품에 "고른 X와 닿아
+        있어요"가 뜨면 말이 안 된다.
+      */}
+      <WorkDetailSheet
+        work={open}
+        sources={
+          open !== null && !pickedKeys.has(workKey(open))
+            ? recommendationSources(open, state.picks, recommendations ?? {})
+            : []
+        }
+        onClose={() => setOpen(null)}
+      />
     </>
   )
 }
