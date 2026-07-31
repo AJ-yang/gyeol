@@ -2,8 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Duel } from '@/components/Duel'
 import { WorkGrid } from '@/components/WorkGrid'
+import { nextDuel } from '@/lib/gyeol/duel'
 import { searchWorks } from '@/lib/gyeol/grid'
+import { matchGyeol } from '@/lib/gyeol/match'
 import { encodePicks } from '@/lib/gyeol/payload'
 import { makeRng } from '@/lib/rng'
 import { buildPickPool } from '@/lib/gyeol/pool'
@@ -19,11 +22,17 @@ import { workKey, type CatalogEntry } from '@/lib/gyeol/types'
  */
 const MIN_PICKS = 5
 
+/** 2라운드 대결 상한. 이 안에 못 가르면 그대로 결과로 보낸다. */
+const MAX_DUELS = 5
+
 export default function PickPage() {
   const router = useRouter()
   const { catalog, failed } = useCatalog()
   const [picks, setPicks] = useState<CatalogEntry[]>([])
   const [query, setQuery] = useState('')
+  const [inDuels, setInDuels] = useState(false)
+  const [duelsDone, setDuelsDone] = useState(0)
+  const [seen, setSeen] = useState<ReadonlySet<string>>(new Set())
 
   // 세션마다 순서를 바꾸되 리렌더에는 흔들리지 않게 시드를 한 번만 뽑는다.
   const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31))
@@ -37,6 +46,23 @@ export default function PickPage() {
     () => (catalog ? searchWorks(catalog.works, query, 12) : []),
     [catalog, query],
   )
+
+  // 2라운드는 1라운드가 잡은 기준선 위에서 붙어 있는 결을 가른다.
+  const duel = useMemo(() => {
+    if (!catalog || !inDuels || duelsDone >= MAX_DUELS) return null
+    return nextDuel(picks, matchGyeol(picks, catalog, GYEOL_TYPES), catalog, GYEOL_TYPES, seen)
+  }, [catalog, inDuels, duelsDone, picks, seen])
+
+  function goToResult(final: CatalogEntry[]) {
+    router.push(`/result/?p=${encodePicks(final.map((w) => ({ i: w.i, m: w.m })))}`)
+  }
+
+  function answerDuel(winner: CatalogEntry | null) {
+    if (duel === null) return
+    setSeen((current) => new Set([...current, workKey(duel.left.work), workKey(duel.right.work)]))
+    if (winner !== null) setPicks((current) => [...current, winner])
+    setDuelsDone((n) => n + 1)
+  }
 
   function toggle(work: CatalogEntry) {
     const key = workKey(work)
@@ -69,6 +95,30 @@ export default function PickPage() {
     )
   }
 
+  // 대결이 끝났거나 더 물을 것이 없으면 결과로 보낸다.
+  if (inDuels && duel === null) {
+    goToResult(picks)
+    return (
+      <main className="flex min-h-dvh items-center justify-center">
+        <p className="animate-pulse text-neutral-500">결을 읽는 중…</p>
+      </main>
+    )
+  }
+
+  if (inDuels) {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 px-4 py-6">
+        <Duel
+          duel={duel!}
+          round={duelsDone + 1}
+          total={MAX_DUELS}
+          onPick={(work) => answerDuel(work)}
+          onSkip={() => answerDuel(null)}
+        />
+      </main>
+    )
+  }
+
   const remaining = MIN_PICKS - picks.length
 
   return (
@@ -85,12 +135,13 @@ export default function PickPage() {
             <>
               <span className="break-keep text-sm text-neutral-500">더 고를수록 정확해져요</span>
               <button
-                onClick={() =>
-                  router.push(`/result/?p=${encodePicks(picks.map((w) => ({ i: w.i, m: w.m })))}`)
-                }
+                onClick={() => {
+                  setSeen(new Set(picks.map(workKey)))
+                  setInDuels(true)
+                }}
                 className="ml-auto shrink-0 rounded-full bg-white px-5 py-2 font-bold text-black"
               >
-                결과 보기
+                다음
               </button>
             </>
           )}
