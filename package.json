@@ -1,5 +1,5 @@
 {
-  "name": "story-compass",
+  "name": "gyeol",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,7 +11,7 @@
     "fetch:catalog": "tsx --env-file=.env.local scripts/fetch-catalog.ts",
     "fetch:keywords": "tsx --env-file=.env.local scripts/fetch-keywords.ts",
     "build:catalog": "tsx scripts/build-catalog.ts",
-    "build:pages": "PAGES_BASE_PATH=/story-compass PAGES_SITE_URL=https://AJ-yang.github.io/story-compass next build && tsx scripts/postbuild-pages.ts",
+    "build:pages": "PAGES_BASE_PATH=/gyeol PAGES_SITE_URL=https://AJ-yang.github.io/gyeol next build && tsx scripts/postbuild-pages.ts",
     "deploy:pages": "npm run build:pages && bash scripts/deploy-pages.sh",
     "fetch:recommendations": "tsx --env-file=.env.local scripts/fetch-recommendations.ts",
     "build:data": "npm run fetch:catalog && npm run fetch:keywords && npm run build:catalog && npm run fetch:recommendations"

@@ -6,7 +6,7 @@ import type { NextConfig } from 'next'
  * 클라이언트가 URL에서 읽는다. 공유 미리보기에 필요한 og:image와 제목은
  * 코드만으로 정해지므로 정적 HTML에 그대로 박힌다.
  *
- * basePath는 배포 때만 켠다. 로컬 개발에서 켜면 주소가 /story-compass로 밀린다.
+ * basePath는 배포 때만 켠다. 로컬 개발에서 켜면 주소가 /gyeol로 밀린다.
  */
 const basePath = process.env.PAGES_BASE_PATH ?? ''
 
