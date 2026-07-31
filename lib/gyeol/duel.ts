@@ -1,13 +1,5 @@
 import { workKey, type Catalog, type CatalogEntry, type Gyeol, type GyeolScore } from './types'
 
-/**
- * 1위가 2위보다 이 비율만큼 앞서면 결판난 것으로 본다.
- *
- * 실측에서 범죄 취향은 1라운드만으로 45% 차이가 났고 로맨스 취향은 1%였다.
- * 이미 벌어진 사람에게 더 묻는 것은 시간 낭비다.
- */
-export const TIE_THRESHOLD = 0.3
-
 /** 1위에게 도전할 후보를 몇 위까지 볼지. 너무 넓히면 무관한 결이 올라온다. */
 const CHALLENGER_DEPTH = 4
 
@@ -37,7 +29,12 @@ export type Duel = { left: DuelSide; right: DuelSide }
  * 다음 대결을 고른다. 결판났거나 가를 작품이 없으면 `null`.
  *
  * 1라운드가 기준선을 잡았으니 2라운드가 할 일은 **붙어 있는 후보를 가르는 것**
- * 하나다. 더 고르게 하는 것으로는 안 갈린다 — 실측에서 15편을 골라도 5편 더
+ * 하나다.
+ *
+ * **1위가 앞선다고 조기 종료하지 않는다.** 처음에는 1·2위가 30% 넘게 벌어지면
+ * 건너뛰게 했는데, 실측에서 5편 기준 48%가 그 상태였다. 사용자의 절반이 대결을
+ * 한 번도 못 보고 결과로 넘어갔다. 벌어진 사람에게도 물어볼 값어치는 있다 —
+ * 아래 순위를 정리하고 추천에 쓸 신호가 늘어난다. 더 고르게 하는 것으로는 안 갈린다 — 실측에서 15편을 골라도 5편 더
  * 고르면 42%가 뒤집혔고 1·2위 차이는 편수와 거의 무관했다.
  *
  * 앞선 구현이 실제 데이터에서 무너진 원인 셋을 여기서 막는다.
@@ -61,9 +58,8 @@ export function nextDuel(
   const ranked = [...scores].sort((a, b) => b.score - a.score)
   if (ranked.length < 2) return null
 
-  const top = ranked[0].score
-  if (top <= 0) return null
-  if ((top - ranked[1].score) / top > TIE_THRESHOLD) return null
+  // 점수가 전부 0이면 가릴 것이 없다.
+  if (ranked[0].score <= 0) return null
 
   const byId = new Map(gyeolTypes.map((g) => [g.id, g]))
   const vocabularyIndex = new Map(catalog.vocabulary.map((k, i) => [k, i]))

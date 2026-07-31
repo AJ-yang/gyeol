@@ -49,11 +49,12 @@ export function Duel({
         ))}
       </div>
 
+      {/* 모르는 작품이거나 판단이 어려울 때 넘어갈 길. 없으면 아무거나 찍게 된다. */}
       <button
         onClick={onSkip}
         className="mx-auto rounded-full border border-neutral-700 px-6 py-2.5 text-sm text-neutral-400 transition hover:bg-neutral-900"
       >
-        둘 다 아니에요
+        잘 모르겠어요
       </button>
     </div>
   )

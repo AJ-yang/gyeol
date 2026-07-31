@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Duel } from '@/components/Duel'
 import { WorkGrid } from '@/components/WorkGrid'
@@ -53,9 +53,15 @@ export default function PickPage() {
     return nextDuel(picks, matchGyeol(picks, catalog, GYEOL_TYPES), catalog, GYEOL_TYPES, seen)
   }, [catalog, inDuels, duelsDone, picks, seen])
 
-  function goToResult(final: CatalogEntry[]) {
-    router.push(`/result/?p=${encodePicks(final.map((w) => ({ i: w.i, m: w.m })))}`)
-  }
+  // 대결이 끝났거나 더 물을 것이 없는 상태.
+  const duelsOver = inDuels && catalog !== null && duel === null
+
+  // 렌더 도중에 router.push를 부르면 React가 다른 컴포넌트를 갱신한다고 막는다.
+  // "Cannot update a component (Router) while rendering a different component".
+  useEffect(() => {
+    if (!duelsOver) return
+    router.push(`/result/?p=${encodePicks(picks.map((w) => ({ i: w.i, m: w.m })))}`)
+  }, [duelsOver, picks, router])
 
   function answerDuel(winner: CatalogEntry | null) {
     if (duel === null) return
@@ -95,9 +101,8 @@ export default function PickPage() {
     )
   }
 
-  // 대결이 끝났거나 더 물을 것이 없으면 결과로 보낸다.
-  if (inDuels && duel === null) {
-    goToResult(picks)
+  // 이동은 위 useEffect가 한다. 여기서는 기다리는 화면만 그린다.
+  if (duelsOver) {
     return (
       <main className="flex min-h-dvh items-center justify-center">
         <p className="animate-pulse text-neutral-500">결을 읽는 중…</p>

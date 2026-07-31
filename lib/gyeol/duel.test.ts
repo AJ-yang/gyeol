@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextDuel, TIE_THRESHOLD } from './duel'
+import { nextDuel } from './duel'
 import { GENRE_INDEX } from './genres'
 import { workKey, type Catalog, type CatalogEntry, type Gyeol } from './types'
 
@@ -130,13 +130,15 @@ describe('nextDuel', () => {
     }
   })
 
-  it('1위가 충분히 앞서면 null을 낸다', () => {
+  it('1위가 앞서 있어도 대결을 낸다', () => {
+    // 조기 종료를 두었더니 5편 기준 48%가 대결을 한 번도 못 봤다.
+    // 기능이 절반에게 안 보이는 것은 최적화가 아니라 결함이다.
     const decided = [
       { id: 'back-then', score: 100 },
       { id: 'late-heart', score: 10 },
       { id: 'revenge', score: 2 },
     ]
-    expect(nextDuel(PICKS, decided, CATALOG, TYPES, new Set())).toBeNull()
+    expect(nextDuel(PICKS, decided, CATALOG, TYPES, new Set())).not.toBeNull()
   })
 
   it('가를 작품을 못 찾으면 null을 낸다', () => {
@@ -148,10 +150,5 @@ describe('nextDuel', () => {
   it('점수가 전부 0이면 null을 낸다', () => {
     const zero = TYPES.map((g) => ({ id: g.id, score: 0 }))
     expect(nextDuel(PICKS, zero, CATALOG, TYPES, new Set())).toBeNull()
-  })
-
-  it('TIE_THRESHOLD가 0과 1 사이다', () => {
-    expect(TIE_THRESHOLD).toBeGreaterThan(0)
-    expect(TIE_THRESHOLD).toBeLessThan(1)
   })
 })
