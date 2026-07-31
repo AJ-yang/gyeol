@@ -54,6 +54,21 @@ export type Gyeol = {
   id: string
   name: string
   description: string
+  /**
+   * 공유 카드에 크게 박히는 한 줄. 설명을 요약한 것이 아니라 그 결인 사람이
+   * 할 법한 말이다. 카드는 읽는 것이 아니라 알아보는 것이라 짧아야 한다.
+   */
+  catchphrase: string
+  /** 카드 상단의 큰 마크. 시스템 이모지 폰트로 그리므로 별도 에셋이 없다 */
+  emoji: string
+  /**
+   * 결 고유 색상(HSL 색상환 0~359).
+   *
+   * 채도와 명도는 코드에서 고정하고 색상만 데이터로 둔다. 25개가 전부 다른
+   * 색이라야 "너는 무슨 색 나왔어"가 성립한다 — 카드가 공유되는 이유가
+   * 예쁨보다 이 비교에 있다.
+   */
+  hue: number
   /** TMDB 키워드 이름. 실존하는 것만 쓴다 */
   keywords: string[]
   genres: GenreLabel[]

@@ -2,17 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { matchGyeol, GENRE_BONUS } from './match'
 import { GENRE_INDEX } from './genres'
 import type { Catalog, CatalogEntry, Gyeol } from './types'
+import { makeGyeol } from './gyeol.fixture'
 
 const VOCAB = ['chaebol', 'murder', 'revenge']
 const TYPES: Gyeol[] = [
-  {
-    id: 'revenge', name: '서늘한 복수의 결', description: '설명'.repeat(20),
-    keywords: ['revenge', 'murder'], genres: ['범죄'],
-  },
-  {
-    id: 'stairs', name: '계단을 오르내리는 결', description: '설명'.repeat(20),
-    keywords: ['chaebol'], genres: ['로맨스'],
-  },
+  makeGyeol({ id: 'revenge', name: '서늘한 복수의 결', keywords: ['revenge', 'murder'], genres: ['범죄'] }),
+  makeGyeol({ id: 'stairs', name: '계단을 오르내리는 결', keywords: ['chaebol'], genres: ['로맨스'] }),
 ]
 
 function work(k: number[], g: number[] = []): CatalogEntry {

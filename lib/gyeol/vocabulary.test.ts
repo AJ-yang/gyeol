@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { buildVocabulary } from './vocabulary'
 import type { Gyeol } from './types'
+import { makeGyeol } from './gyeol.fixture'
 
 const FIXTURE: Gyeol[] = [
-  { id: 'a', name: 'A', description: '설명'.repeat(20), keywords: ['revenge', 'murder'], genres: ['범죄'] },
-  { id: 'b', name: 'B', description: '설명'.repeat(20), keywords: ['murder', 'police'], genres: ['미스터리'] },
+  makeGyeol({ id: 'a', name: 'A', keywords: ['revenge', 'murder'], genres: ['범죄'] }),
+  makeGyeol({ id: 'b', name: 'B', keywords: ['murder', 'police'], genres: ['미스터리'] }),
 ]
 
 describe('buildVocabulary', () => {

@@ -3,12 +3,13 @@ import { buildGyeolPool, buildPickPool } from './pool'
 import { makeRng } from '../rng'
 import { GENRE_INDEX } from './genres'
 import { workKey, type Catalog, type CatalogEntry, type Gyeol } from './types'
+import { makeGyeol } from './gyeol.fixture'
 
 const VOCAB = ['revenge', 'romance', 'zombie']
 const TYPES: Gyeol[] = [
-  { id: 'revenge', name: '복수', description: '설명'.repeat(20), keywords: ['revenge'], genres: ['범죄'] },
-  { id: 'love', name: '사랑', description: '설명'.repeat(20), keywords: ['romance'], genres: ['로맨스'] },
-  { id: 'survive', name: '생존', description: '설명'.repeat(20), keywords: ['zombie'], genres: ['공포'] },
+  makeGyeol({ id: 'revenge', name: '복수', keywords: ['revenge'], genres: ['범죄'] }),
+  makeGyeol({ id: 'love', name: '사랑', keywords: ['romance'], genres: ['로맨스'] }),
+  makeGyeol({ id: 'survive', name: '생존', keywords: ['zombie'], genres: ['공포'] }),
 ]
 
 function work(i: number, ko: 0 | 1, k: number[]): CatalogEntry {
@@ -69,7 +70,7 @@ describe('buildGyeolPool', () => {
     // 어느 작품도 안 걸리는 결이 있어도 던지면 안 된다
     const lonely: Gyeol[] = [
       ...TYPES,
-      { id: 'none', name: '없음', description: '설명'.repeat(20), keywords: ['nowhere'], genres: [] },
+      makeGyeol({ id: 'none', name: '없음', keywords: ['nowhere'], genres: [] }),
     ]
     expect(() => buildGyeolPool(CATALOG, lonely)).not.toThrow()
   })

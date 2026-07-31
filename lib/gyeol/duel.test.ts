@@ -2,23 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { nextDuel } from './duel'
 import { GENRE_INDEX } from './genres'
 import { workKey, type Catalog, type CatalogEntry, type Gyeol } from './types'
+import { makeGyeol } from './gyeol.fixture'
 
 const VOCAB = ['first love', 'nostalgia', 'youth', 'slow burn', 'unrequited love', 'revenge', 'murder']
 const [FIRST_LOVE, NOSTALGIA, YOUTH, SLOW_BURN, UNREQUITED, REVENGE, MURDER] = [0, 1, 2, 3, 4, 5, 6]
 
 const TYPES: Gyeol[] = [
-  {
-    id: 'back-then', name: '그때로', description: '설명'.repeat(20),
-    keywords: ['first love', 'nostalgia', 'youth'], genres: ['로맨스'],
-  },
-  {
-    id: 'late-heart', name: '늦게', description: '설명'.repeat(20),
-    keywords: ['slow burn', 'unrequited love'], genres: ['로맨스'],
-  },
-  {
-    id: 'revenge', name: '복수', description: '설명'.repeat(20),
-    keywords: ['revenge', 'murder'], genres: ['범죄'],
-  },
+  makeGyeol({ id: 'back-then', name: '그때로', keywords: ['first love', 'nostalgia', 'youth'], genres: ['로맨스'] }),
+  makeGyeol({ id: 'late-heart', name: '늦게', keywords: ['slow burn', 'unrequited love'], genres: ['로맨스'] }),
+  makeGyeol({ id: 'revenge', name: '복수', keywords: ['revenge', 'murder'], genres: ['범죄'] }),
 ]
 
 function work(i: number, k: number[], g: number[] = []): CatalogEntry {

@@ -1,5 +1,6 @@
-import { wrapText } from './wrap-text'
-import type { CatalogEntry } from './types'
+import { fitFontSize } from './fit-text'
+import type { BreakdownRow } from './breakdown'
+import type { CatalogEntry, Gyeol } from './types'
 
 /**
  * 공유 카드 크기. 4:5 세로다.
@@ -12,15 +13,32 @@ export const CARD_HEIGHT = 1350
 
 const PADDING = 80
 const CONTENT_WIDTH = CARD_WIDTH - PADDING * 2
+const CENTER = CARD_WIDTH / 2
 
-/** 포스터 격자. 6열 2행이면 12편이 들어가고 세로 442px를 쓴다. */
+/** 포스터 격자. 6열 2행이면 12편이 들어간다. */
 const POSTER_COLUMNS = 6
 const POSTER_ROWS = 2
 const POSTER_GAP = 12
 const POSTER_WIDTH = (CONTENT_WIDTH - POSTER_GAP * (POSTER_COLUMNS - 1)) / POSTER_COLUMNS
 const POSTER_HEIGHT = POSTER_WIDTH * 1.5
+const POSTER_RADIUS = 10
 
 export const MAX_POSTERS = POSTER_COLUMNS * POSTER_ROWS
+
+/**
+ * 비율 막대. 이름·트랙·퍼센트를 세 칸으로 나눈다.
+ *
+ * 이름을 트랙 안에 겹쳐 쓰면 채워진 부분의 경계가 글자 한가운데를 가로질러
+ * 지저분해진다. 2·3위처럼 비율이 낮을 때 특히 그렇다.
+ */
+const ROW_HEIGHT = 46
+const ROW_GAP = 12
+const NAME_COLUMN = 340
+const PERCENT_COLUMN = 96
+const TRACK_LEFT = PADDING + NAME_COLUMN
+const TRACK_WIDTH = CONTENT_WIDTH - NAME_COLUMN - PERCENT_COLUMN
+const TRACK_HEIGHT = 26
+const TRACK_RADIUS = TRACK_HEIGHT / 2
 
 /**
  * 앱과 같은 폰트 스택을 쓴다. 웹폰트가 없으므로 로딩을 기다릴 필요가 없다.
@@ -29,9 +47,10 @@ export const MAX_POSTERS = POSTER_COLUMNS * POSTER_ROWS
 const FONT = '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", Pretendard, "Segoe UI", "Malgun Gothic", system-ui, sans-serif'
 
 export type ShareCardData = {
-  gyeolName: string
-  description: string
-  /** 고른 작품. 앞에서부터 최대 MAX_POSTERS편만 그린다. */
+  gyeol: Gyeol
+  /** 상위 결 비율. 비어 있으면 막대를 그리지 않는다 */
+  rows: BreakdownRow[]
+  /** 고른 작품. 앞에서부터 최대 MAX_POSTERS편만 그린다 */
   posters: HTMLImageElement[]
   siteUrl: string
 }
@@ -69,67 +88,153 @@ export function posterUrl(work: CatalogEntry): string {
 }
 
 /**
+ * 결 고유색에서 카드 각 부분의 색을 만든다. 채도·명도는 여기서 고정한다.
+ *
+ * 채도를 높게 잡는다. 낮추면 25개 결이 전부 비슷한 회갈색으로 수렴해서
+ * "무슨 색 나왔어"가 성립하지 않는다.
+ */
+function tone(hue: number, lightness: number, alpha = 1): string {
+  return `hsla(${hue}, 72%, ${lightness}%, ${alpha})`
+}
+
+/** `roundRect`가 없는 환경에서는 각진 사각형으로 떨어뜨린다. */
+function pathRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  context.beginPath()
+  if (typeof context.roundRect === 'function') context.roundRect(x, y, width, height, radius)
+  else context.rect(x, y, width, height)
+}
+
+/**
  * 공유 카드를 그린다.
  *
- * 세로 배치를 위에서부터 쌓아 내려간다. 설명 줄 수가 결마다 달라 포스터의
- * 시작 높이가 유동적이므로, 하단(링크·고지)은 아래에서부터 역산해 고정한다.
+ * 설명문은 싣지 않는다. 카드는 읽는 것이 아니라 **한눈에 알아보는 것**이라
+ * 이모지·이름·캐치프레이즈로 끊고, 긴 설명은 사이트에 남긴다. 대신 상위 결
+ * 비율 막대를 넣어 "나는 이런 조합"이 드러나게 한다 — 남과 견줄 것이 있어야
+ * 공유할 이유가 생긴다.
  */
 export function drawShareCard(context: CanvasRenderingContext2D, data: ShareCardData): void {
-  context.fillStyle = '#0a0a0a'
+  const { hue } = data.gyeol
+
+  // 배경: 결 고유색의 세로 그라데이션
+  const background = context.createLinearGradient(0, 0, 0, CARD_HEIGHT)
+  background.addColorStop(0, tone(hue, 24))
+  background.addColorStop(0.55, tone(hue, 11))
+  background.addColorStop(1, tone(hue, 6))
+  context.fillStyle = background
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT)
+
+  // 이모지 뒤의 부드러운 빛. 상단에 무게를 실어 시선을 잡는다.
+  const glow = context.createRadialGradient(CENTER, 180, 0, CENTER, 180, 460)
+  glow.addColorStop(0, tone(hue, 62, 0.35))
+  glow.addColorStop(1, tone(hue, 62, 0))
+  context.fillStyle = glow
+  context.fillRect(0, 0, CARD_WIDTH, 640)
+
   context.textBaseline = 'top'
+  context.textAlign = 'center'
 
-  let y = PADDING + 20
+  // 이모지 마크
+  context.font = `128px ${FONT}`
+  context.fillText(data.gyeol.emoji, CENTER, 96)
 
-  // 머리말
-  context.font = `34px ${FONT}`
-  context.fillStyle = '#737373'
-  context.fillText('당신이 자꾸 고르는 이야기', PADDING, y)
-  y += 58
-
-  // 결 이름
-  context.font = `bold 76px ${FONT}`
+  // 결 이름. 긴 이름은 줄바꿈하지 않고 글자를 줄여 한 줄을 지킨다.
+  const nameSize = fitFontSize(CONTENT_WIDTH, 78, 46, (size) => {
+    context.font = `bold ${size}px ${FONT}`
+    return context.measureText(data.gyeol.name).width
+  })
+  context.font = `bold ${nameSize}px ${FONT}`
   context.fillStyle = '#ffffff'
-  context.fillText(data.gyeolName, PADDING, y)
-  y += 110
+  context.fillText(data.gyeol.name, CENTER, 254 + (78 - nameSize) / 2)
 
-  // 설명. 넘치면 아래가 밀리므로 줄 수를 제한한다.
-  context.font = `36px ${FONT}`
-  context.fillStyle = '#d4d4d4'
-  const lines = wrapText(data.description, CONTENT_WIDTH, (t) => context.measureText(t).width)
-  for (const line of lines.slice(0, 4)) {
-    context.fillText(line, PADDING, y)
-    y += 52
+  // 캐치프레이즈. 결의 목소리라 따옴표로 감싼다.
+  const phrase = `"${data.gyeol.catchphrase}"`
+  const phraseSize = fitFontSize(CONTENT_WIDTH, 42, 26, (size) => {
+    context.font = `${size}px ${FONT}`
+    return context.measureText(phrase).width
+  })
+  context.font = `${phraseSize}px ${FONT}`
+  context.fillStyle = tone(hue, 78)
+  context.fillText(phrase, CENTER, 362)
+
+  // 비율 막대
+  let y = 452
+  for (const row of data.rows) {
+    // 결 이름. 칸을 넘치면 글자를 줄인다.
+    const rowSize = fitFontSize(NAME_COLUMN - 16, 28, 20, (size) => {
+      context.font = `bold ${size}px ${FONT}`
+      return context.measureText(row.name).width
+    })
+    context.font = `bold ${rowSize}px ${FONT}`
+    context.fillStyle = 'rgba(255, 255, 255, 0.92)'
+    context.textAlign = 'left'
+    context.fillText(row.name, PADDING, y + (ROW_HEIGHT - rowSize) / 2 - 2)
+
+    // 바탕 트랙
+    const trackTop = y + (ROW_HEIGHT - TRACK_HEIGHT) / 2
+    context.fillStyle = 'rgba(0, 0, 0, 0.28)'
+    pathRect(context, TRACK_LEFT, trackTop, TRACK_WIDTH, TRACK_HEIGHT, TRACK_RADIUS)
+    context.fill()
+
+    // 채워진 부분. 결마다 색이 달라 1·2·3위가 서로 구분된다.
+    // 비율이 아주 낮아도 동그라미 하나는 남겨 "0처럼" 보이지 않게 한다.
+    const filled = Math.max((TRACK_WIDTH * row.percent) / 100, TRACK_HEIGHT)
+    context.fillStyle = tone(row.hue, 58, 1)
+    pathRect(context, TRACK_LEFT, trackTop, filled, TRACK_HEIGHT, TRACK_RADIUS)
+    context.fill()
+
+    context.font = `bold 30px ${FONT}`
+    context.fillStyle = '#ffffff'
+    context.textAlign = 'right'
+    context.fillText(`${row.percent}%`, CARD_WIDTH - PADDING, y + 8)
+
+    y += ROW_HEIGHT + ROW_GAP
   }
 
-  // 포스터 격자를 설명과 하단 고정 영역 사이의 한가운데에 둔다.
+  // 포스터 격자. 마지막 줄이 덜 차도 가운데 정렬해 균형을 맞춘다.
   //
-  // 아래에서만 역산하면 설명이 짧을 때 위쪽에 큰 구멍이 생긴다. 반대로 위에서만
-  // 쌓으면 설명이 길 때 링크를 덮는다. 남는 공간을 위아래로 나눠 가지면 설명이
-  // 세 줄이든 네 줄이든 균형이 잡힌다.
+  // 세로 위치는 막대 아래와 링크 위 사이의 한가운데로 잡는다. 위에서만 쌓으면
+  // 아래에 큰 구멍이 남고, 아래에서만 역산하면 막대와 붙는다.
+  const posters = data.posters.slice(0, MAX_POSTERS)
   const gridHeight = POSTER_HEIGHT * POSTER_ROWS + POSTER_GAP
-  const spaceTop = y + 40
-  const spaceBottom = CARD_HEIGHT - PADDING - 180
+  const spaceTop = (data.rows.length > 0 ? y : 452) + 34
+  const spaceBottom = CARD_HEIGHT - PADDING - 150
   const gridTop = Math.max(spaceTop, spaceTop + (spaceBottom - spaceTop - gridHeight) / 2)
-  data.posters.slice(0, MAX_POSTERS).forEach((image, index) => {
-    const column = index % POSTER_COLUMNS
-    const row = Math.floor(index / POSTER_COLUMNS)
-    const x = PADDING + column * (POSTER_WIDTH + POSTER_GAP)
+  for (let row = 0; row < POSTER_ROWS; row++) {
+    const inRow = posters.slice(row * POSTER_COLUMNS, (row + 1) * POSTER_COLUMNS)
+    if (inRow.length === 0) break
+    const rowWidth = inRow.length * POSTER_WIDTH + (inRow.length - 1) * POSTER_GAP
+    const startX = CENTER - rowWidth / 2
     const top = gridTop + row * (POSTER_HEIGHT + POSTER_GAP)
-    context.drawImage(image, x, top, POSTER_WIDTH, POSTER_HEIGHT)
-  })
+
+    inRow.forEach((image, column) => {
+      const x = startX + column * (POSTER_WIDTH + POSTER_GAP)
+      context.save()
+      pathRect(context, x, top, POSTER_WIDTH, POSTER_HEIGHT, POSTER_RADIUS)
+      context.clip()
+      context.drawImage(image, x, top, POSTER_WIDTH, POSTER_HEIGHT)
+      context.restore()
+    })
+  }
 
   // 링크. 이미지만 받은 사람이 돌아올 유일한 길이라 눈에 띄게 둔다.
+  context.textAlign = 'center'
   context.font = `bold 38px ${FONT}`
   context.fillStyle = '#ffffff'
-  context.fillText(data.siteUrl, PADDING, CARD_HEIGHT - PADDING - 96)
+  context.fillText(data.siteUrl, CENTER, CARD_HEIGHT - PADDING - 96)
 
   // TMDB 고지. 이미지가 사이트 밖으로 나가므로 여기 박혀 있어야 약관을 지킨다.
   context.font = `24px ${FONT}`
-  context.fillStyle = '#525252'
+  context.fillStyle = 'rgba(255, 255, 255, 0.38)'
   context.fillText(
     'This product uses the TMDB API but is not endorsed or certified by TMDB.',
-    PADDING,
+    CENTER,
     CARD_HEIGHT - PADDING - 40,
   )
 }

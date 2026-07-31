@@ -9,7 +9,8 @@ import {
   loadImage,
   posterUrl,
 } from '@/lib/gyeol/share-card'
-import type { CatalogEntry } from '@/lib/gyeol/types'
+import type { BreakdownRow } from '@/lib/gyeol/breakdown'
+import type { CatalogEntry, Gyeol } from '@/lib/gyeol/types'
 
 const SITE_URL = 'aj-yang.github.io/gyeol'
 const FILE_NAME = 'gyeol.png'
@@ -24,12 +25,12 @@ type State = 'idle' | 'working' | 'failed'
  * 자동으로 다운로드로 떨어진다.
  */
 export function ShareCardButton({
-  gyeolName,
-  description,
+  gyeol,
+  rows,
   picks,
 }: {
-  gyeolName: string
-  description: string
+  gyeol: Gyeol
+  rows: BreakdownRow[]
   picks: CatalogEntry[]
 }) {
   const [state, setState] = useState<State>('idle')
@@ -51,7 +52,7 @@ export function ShareCardButton({
       const context = canvas.getContext('2d')
       if (!context) throw new Error('canvas 2d 컨텍스트를 못 얻었다')
 
-      drawShareCard(context, { gyeolName, description, posters, siteUrl: SITE_URL })
+      drawShareCard(context, { gyeol, rows, posters, siteUrl: SITE_URL })
 
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
       if (!blob) throw new Error('이미지로 못 바꿨다')

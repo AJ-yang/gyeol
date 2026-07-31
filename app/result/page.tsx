@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ShareCardButton } from '@/components/ShareCardButton'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
+import { breakdown } from '@/lib/gyeol/breakdown'
 import { matchGyeol } from '@/lib/gyeol/match'
 import { decodePicks } from '@/lib/gyeol/payload'
 import { recommend } from '@/lib/gyeol/recommend'
@@ -29,9 +30,10 @@ function Result() {
     const picks = refs.map((r) => byKey.get(workKey(r))).filter((w) => w !== undefined)
     if (picks.length === 0) return { broken: true as const }
 
-    const top = matchGyeol(picks, catalog, GYEOL_TYPES)[0]
-    const gyeol = GYEOL_TYPES.find((g) => g.id === top.id)!
-    return { broken: false as const, gyeol, picks }
+    const scores = matchGyeol(picks, catalog, GYEOL_TYPES)
+    const gyeol = GYEOL_TYPES.find((g) => g.id === scores[0].id)!
+    // 공유 카드에 들어갈 상위 3개. 1위만 보여주면 견줄 것이 없다.
+    return { broken: false as const, gyeol, picks, rows: breakdown(scores, GYEOL_TYPES, 3) }
   }, [catalog, payload])
 
   if (!state) {
@@ -106,11 +108,7 @@ function Result() {
         위에 둔다. 카드에는 고른 작품의 포스터가 들어간다.
       */}
       <div className="flex flex-col items-center gap-5">
-        <ShareCardButton
-          gyeolName={state.gyeol.name}
-          description={state.gyeol.description}
-          picks={state.picks}
-        />
+        <ShareCardButton gyeol={state.gyeol} rows={state.rows} picks={state.picks} />
         <Link href="/pick/" className="text-sm text-neutral-400 underline">
           다시 하기
         </Link>
