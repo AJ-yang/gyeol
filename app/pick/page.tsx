@@ -6,7 +6,8 @@ import { WorkGrid } from '@/components/WorkGrid'
 import { searchWorks } from '@/lib/gyeol/grid'
 import { encodePicks } from '@/lib/gyeol/payload'
 import { makeRng } from '@/lib/rng'
-import { buildPickPool } from '@/lib/gyeol/sections'
+import { buildPickPool } from '@/lib/gyeol/pool'
+import { GYEOL_TYPES } from '@/data/gyeol-types'
 import { useCatalog } from '@/lib/gyeol/use-catalog'
 import { workKey, type CatalogEntry } from '@/lib/gyeol/types'
 
@@ -29,7 +30,7 @@ export default function PickPage() {
 
   const selected = useMemo(() => new Set(picks.map(workKey)), [picks])
   const pool = useMemo(
-    () => (catalog ? buildPickPool(catalog.works, makeRng(seed)) : []),
+    () => (catalog ? buildPickPool(catalog, GYEOL_TYPES, makeRng(seed)) : []),
     [catalog, seed],
   )
   const searchHits = useMemo(
