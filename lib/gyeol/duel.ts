@@ -21,6 +21,14 @@ const TASTE_BONUS = 1.0
  */
 const FAME_LIMIT = 250
 
+/**
+ * 가장 잘 맞는 작품 대비 이 비율 이상이어야 후보로 남는다.
+ *
+ * 관문을 통과한 것들 중에서는 인지도로 고른다. 낮추면 약하게 스친 유명작이
+ * 들어오고, 높이면 후보가 말라 무명작만 남는다.
+ */
+const STRENGTH_GATE = 0.6
+
 /** 대결 한쪽. 어느 결을 대표하는 작품인지 같이 들고 다닌다. */
 export type DuelSide = { gyeolId: string; gyeolName: string; work: CatalogEntry }
 export type Duel = { left: DuelSide; right: DuelSide }
@@ -82,25 +90,26 @@ export function nextDuel(
   }
 
   /**
-   * 자기 결의 키워드는 갖고 상대 결의 키워드는 없는 작품 중 그 결을 가장 잘
-   * 대표하는 것.
+   * 자기 결의 키워드는 갖고 상대 결의 키워드는 없는 작품 중 대결에 세울 것.
    *
-   * **얼마나 강하게 맞는지로 고른다.** 카탈로그 순서(인지도)로만 뽑으면 약한
-   * 키워드 하나로 걸린 유명작이 이긴다. 실제로 「살인의 추억」이 `1980s` 하나로
-   * 「그때로 돌아가는 결」의 대표작이 됐다. `first love`와 `nostalgia`를 둘 다
-   * 가진 진짜 첫사랑 영화가 밀린 것이다.
+   * **충분히 맞는 것들 중 가장 알아볼 만한 것을 고른다.** 두 단계로 나누는
+   * 이유는 한쪽만 보면 반드시 실패하기 때문이다.
    *
-   * 후보를 각 그룹 상위 FAME_LIMIT편으로 먼저 자른다. 그 안에서 맞은 키워드의
-   * IDF 합으로 점수를 매기고, 동점이면 카탈로그 순서(인지도 순)가 앞선 쪽을
-   * 쓴다. 사용자 취향과 장르가 겹치면 가산한다.
+   * - 인지도만 보면 「살인의 추억」이 `1980s` 하나로 「그때로 돌아가는 결」의
+   *   대표가 된다. 약하게 스친 유명작이 이긴다.
+   * - 강도만 보면 「빛나는 TV를 보았다」·「화성인 지구정복」이 뽑힌다. 무명작일수록
+   *   희귀 키워드가 많이 붙어 IDF 합이 커진다. 실제로 이 방식에서는 「기묘한
+   *   이야기」(그룹 1위)가 6번째 대결까지 안 나왔다.
+   *
+   * 그래서 먼저 강도가 최댓값의 STRENGTH_GATE 이상인 것만 남기고, 그 안에서
+   * 그룹 내 인지도 순위가 가장 앞선 것을 쓴다. 첫 판이 가장 알아볼 만해야 한다.
    */
   function represent(
     mine: ReadonlySet<number>,
     theirs: ReadonlySet<number>,
     exclude: ReadonlySet<string>,
   ): CatalogEntry | undefined {
-    let best: CatalogEntry | undefined
-    let bestScore = -Infinity
+    const eligible: { work: CatalogEntry; strength: number }[] = []
 
     for (const work of catalog.works) {
       if (used.has(workKey(work)) || exclude.has(workKey(work))) continue
@@ -112,14 +121,21 @@ export function nextDuel(
       if (strength <= 0) continue
       if (work.g.some((g) => tasteGenres.has(g))) strength += TASTE_BONUS
 
-      // 동점이면 먼저 만난 쪽을 유지한다. 카탈로그가 인지도 순이므로 더 유명하다.
-      if (strength > bestScore) {
-        bestScore = strength
-        best = work
-      }
+      eligible.push({ work, strength })
     }
 
-    return best
+    if (eligible.length === 0) return undefined
+
+    const strongest = Math.max(...eligible.map((e) => e.strength))
+    const passed = eligible.filter((e) => e.strength >= strongest * STRENGTH_GATE)
+
+    let best = passed[0]
+    for (const candidate of passed) {
+      const a = fameRank.get(workKey(candidate.work)) ?? Infinity
+      const b = fameRank.get(workKey(best.work)) ?? Infinity
+      if (a < b) best = candidate
+    }
+    return best.work
   }
 
   const champion = byId.get(ranked[0].id)

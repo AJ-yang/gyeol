@@ -3,13 +3,13 @@ import { nextDuel } from './duel'
 import { GENRE_INDEX } from './genres'
 import { workKey, type Catalog, type CatalogEntry, type Gyeol } from './types'
 
-const VOCAB = ['first love', 'nostalgia', 'slow burn', 'unrequited love', 'revenge', 'murder']
-const [FIRST_LOVE, NOSTALGIA, SLOW_BURN, UNREQUITED, REVENGE, MURDER] = [0, 1, 2, 3, 4, 5]
+const VOCAB = ['first love', 'nostalgia', 'youth', 'slow burn', 'unrequited love', 'revenge', 'murder']
+const [FIRST_LOVE, NOSTALGIA, YOUTH, SLOW_BURN, UNREQUITED, REVENGE, MURDER] = [0, 1, 2, 3, 4, 5, 6]
 
 const TYPES: Gyeol[] = [
   {
     id: 'back-then', name: '그때로', description: '설명'.repeat(20),
-    keywords: ['first love', 'nostalgia'], genres: ['로맨스'],
+    keywords: ['first love', 'nostalgia', 'youth'], genres: ['로맨스'],
   },
   {
     id: 'late-heart', name: '늦게', description: '설명'.repeat(20),
@@ -31,7 +31,7 @@ const CRIME = GENRE_INDEX['범죄']
 /** 로맨스 두 결과 범죄 결의 대표작을 각각 둔다. 앞쪽일수록 유명하다. */
 const WORKS = [
   work(1, [REVENGE, MURDER], [CRIME]),
-  work(2, [FIRST_LOVE, NOSTALGIA], [ROMANCE]),
+  work(2, [FIRST_LOVE, NOSTALGIA, YOUTH], [ROMANCE]),
   work(3, [SLOW_BURN, UNREQUITED], [ROMANCE]),
   work(4, [FIRST_LOVE], [ROMANCE]),
   work(5, [UNREQUITED], [ROMANCE]),
@@ -71,7 +71,7 @@ describe('nextDuel', () => {
     // 장르만 스친 작품은 그 결을 대표하지 못한다. 카탈로그의 39%가 그렇다.
     const duel = nextDuel(PICKS, TIED, CATALOG, TYPES, new Set())!
     const keys: Record<string, number[]> = {
-      'back-then': [FIRST_LOVE, NOSTALGIA],
+      'back-then': [FIRST_LOVE, NOSTALGIA, YOUTH],
       'late-heart': [SLOW_BURN, UNREQUITED],
     }
     for (const side of [duel.left, duel.right]) {
@@ -84,7 +84,7 @@ describe('nextDuel', () => {
     const duel = nextDuel(PICKS, TIED, CATALOG, TYPES, new Set())!
     const other: Record<string, number[]> = {
       'back-then': [SLOW_BURN, UNREQUITED],
-      'late-heart': [FIRST_LOVE, NOSTALGIA],
+      'late-heart': [FIRST_LOVE, NOSTALGIA, YOUTH],
     }
     for (const side of [duel.left, duel.right]) {
       expect(side.work.k.some((k) => other[side.gyeolId].includes(k)), side.gyeolId).toBe(false)
@@ -100,11 +100,27 @@ describe('nextDuel', () => {
     }
   })
 
-  it('그 결에 더 강하게 맞는 작품을 고른다', () => {
+  it('충분히 맞는 것들 중 가장 유명한 것을 고른다', () => {
+    // 강도만 최대화하면 「기묘한 이야기」(그룹 1위)가 6번째 대결까지 안 나오고
+    // 콜 미 바이 유어 네임(#232)·트윈 픽스(#163)가 먼저 나왔다. 첫 판이 가장
+    // 알아볼 만해야 한다.
+    // 앞 = 유명, 강도 2/3 (관문 통과) · 뒤 = 덜 유명, 강도 3/3
+    const famousEnough = work(20, [FIRST_LOVE, NOSTALGIA], [ROMANCE])
+    const obscureStronger = work(21, [FIRST_LOVE, NOSTALGIA, YOUTH], [ROMANCE])
+    const catalog: Catalog = {
+      ...CATALOG,
+      works: [famousEnough, obscureStronger, work(22, [SLOW_BURN], [ROMANCE])],
+    }
+    const duel = nextDuel(PICKS, TIED, catalog, TYPES, new Set())!
+    const backThen = duel.left.gyeolId === 'back-then' ? duel.left : duel.right
+    expect(backThen.work.i).toBe(20)
+  })
+
+  it('약하게만 맞는 작품은 유명해도 쓰지 않는다', () => {
     // 「살인의 추억」이 1980s 하나로 「그때로 돌아가는 결」 대표가 됐다.
-    // first love + nostalgia 둘 다 가진 작품이 있으면 그쪽이어야 한다.
+    // 강도가 최댓값에 한참 못 미치면 관문에서 걸린다 (1/3 < 60%)
     const weak = work(10, [NOSTALGIA], [ROMANCE])
-    const strong = work(11, [FIRST_LOVE, NOSTALGIA], [ROMANCE])
+    const strong = work(11, [FIRST_LOVE, NOSTALGIA, YOUTH], [ROMANCE])
     const catalog: Catalog = {
       ...CATALOG,
       // 약한 쪽이 카탈로그 앞(더 유명)에 있어도 강한 쪽이 뽑혀야 한다
