@@ -60,3 +60,14 @@ export type Gyeol = {
 }
 
 export type GyeolScore = { id: string; score: number }
+
+/**
+ * 작품을 가리키는 유일한 키.
+ *
+ * TMDB id는 매체별로 독립이라 id만으로는 작품이 특정되지 않는다. 실제
+ * 카탈로그에서 177건이 겹치며, id 670은 영화 「올드보이」이자 TV
+ * 「Baby Looney Tunes」다. 선택 상태·중복 판정·추천 조회가 전부 이 키를 쓴다.
+ */
+export function workKey(work: { i: number; m: Media }): string {
+  return `${work.m}-${work.i}`
+}
