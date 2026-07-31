@@ -96,7 +96,7 @@ export const GYEOL_TYPES: Gyeol[] = [
     description:
       '여기서는 안 되는 일이 거기서는 되는 이야기를 좋아합니다. 마법이든 귀신이든 규칙만 일관되면 납득합니다. 세계관 설정집이 있으면 읽는 쪽이죠.',
     keywords: ['magic', 'witch', 'wizard', 'supernatural', 'mythology', 'fairy tale'],
-    genres: ['판타지', 'SF'],
+    genres: ['판타지'],
   },
   {
     id: 'late-heart',

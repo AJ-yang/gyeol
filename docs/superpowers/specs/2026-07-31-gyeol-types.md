@@ -125,7 +125,7 @@ PRD 4절대로 **키워드에 큰 가중, 장르에 작은 가중**을 준다. `
 > 세계관 설정집이 있으면 읽는 쪽이죠.
 
 `키워드` magic, witch, wizard, supernatural, mythology, fairy tale
-`장르` 판타지, SF&판타지
+`장르` 판타지
 
 ---
 
