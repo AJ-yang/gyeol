@@ -1,7 +1,8 @@
 // lib/gyeol/sections.test.ts
 import { describe, expect, it } from 'vitest'
 import { GENRE_INDEX } from './genres'
-import { buildSections, SECTION_DEFS } from './sections'
+import { buildPickPool, buildSections, SECTION_DEFS } from './sections'
+import { makeRng } from '../rng'
 import { workKey, type CatalogEntry } from './types'
 
 function work(i: number, ko: 0 | 1, m: 0 | 1, g: number[]): CatalogEntry {
@@ -56,5 +57,30 @@ describe('buildSections', () => {
   it('드라마 장르를 섹션 기준으로 쓰지 않는다', () => {
     // 작품의 60.7%에 붙어 있어 섹션이 뭉개진다
     for (const def of SECTION_DEFS) expect(def.genres, def.name).not.toContain('드라마')
+  })
+})
+
+describe('buildPickPool', () => {
+  it('모든 섹션의 작품을 한 배열로 낸다', () => {
+    const flat = buildSections(WORKS).flatMap((s) => s.works)
+    expect(buildPickPool(WORKS, makeRng(1))).toHaveLength(flat.length)
+  })
+
+  it('섞는다', () => {
+    // 섞지 않으면 장르끼리 뭉쳐 있어 라벨을 뗀 의미가 없다
+    const ordered = buildSections(WORKS).flatMap((s) => s.works).map(workKey)
+    expect(buildPickPool(WORKS, makeRng(7)).map(workKey)).not.toEqual(ordered)
+  })
+
+  it('작품을 잃지도 더하지도 않는다', () => {
+    const ordered = new Set(buildSections(WORKS).flatMap((s) => s.works).map(workKey))
+    const shuffled = new Set(buildPickPool(WORKS, makeRng(7)).map(workKey))
+    expect(shuffled).toEqual(ordered)
+  })
+
+  it('같은 시드는 같은 순서를 낸다', () => {
+    expect(buildPickPool(WORKS, makeRng(3)).map(workKey)).toEqual(
+      buildPickPool(WORKS, makeRng(3)).map(workKey),
+    )
   })
 })

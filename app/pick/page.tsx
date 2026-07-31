@@ -2,11 +2,11 @@
 
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { SectionGrid } from '@/components/SectionGrid'
 import { WorkGrid } from '@/components/WorkGrid'
 import { searchWorks } from '@/lib/gyeol/grid'
 import { encodePicks } from '@/lib/gyeol/payload'
-import { buildSections } from '@/lib/gyeol/sections'
+import { makeRng } from '@/lib/rng'
+import { buildPickPool } from '@/lib/gyeol/sections'
 import { useCatalog } from '@/lib/gyeol/use-catalog'
 import { workKey, type CatalogEntry } from '@/lib/gyeol/types'
 
@@ -24,8 +24,14 @@ export default function PickPage() {
   const [picks, setPicks] = useState<CatalogEntry[]>([])
   const [query, setQuery] = useState('')
 
+  // 세션마다 순서를 바꾸되 리렌더에는 흔들리지 않게 시드를 한 번만 뽑는다.
+  const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31))
+
   const selected = useMemo(() => new Set(picks.map(workKey)), [picks])
-  const sections = useMemo(() => (catalog ? buildSections(catalog.works) : []), [catalog])
+  const pool = useMemo(
+    () => (catalog ? buildPickPool(catalog.works, makeRng(seed)) : []),
+    [catalog, seed],
+  )
   const searchHits = useMemo(
     () => (catalog ? searchWorks(catalog.works, query, 12) : []),
     [catalog, query],
@@ -99,7 +105,7 @@ export default function PickPage() {
 
       {query.trim() !== '' && <WorkGrid works={searchHits} selected={selected} onToggle={toggle} />}
 
-      <SectionGrid sections={sections} selected={selected} onToggle={toggle} />
+      <WorkGrid works={pool} selected={selected} onToggle={toggle} />
     </main>
   )
 }

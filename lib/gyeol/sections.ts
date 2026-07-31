@@ -1,5 +1,6 @@
 // lib/gyeol/sections.ts
 import { GENRE_INDEX } from './genres'
+import { seededShuffle } from '../rng'
 import { workKey, type CatalogEntry, type GenreLabel } from './types'
 
 export type SectionDef = { name: string; genres: GenreLabel[] }
@@ -69,4 +70,18 @@ export function buildSections(works: CatalogEntry[]): Section[] {
     picked.forEach((w) => used.add(workKey(w)))
     return { name: def.name, works: picked }
   })
+}
+
+/**
+ * 섹션을 평평하게 펴서 섞은 뒤 고를 후보를 낸다.
+ *
+ * **장르 이름을 화면에 내보내지 않는다.** "로맨스"라는 머리말이 있으면
+ * 사용자가 작품에 반응하는 대신 장르 라벨에 반응한다. 섹션은 무엇을 고를지
+ * 정하는 데만 쓰고, 보여줄 때는 섞어서 라벨 없이 깐다.
+ *
+ * 섞어도 선정 자체는 섹션이 보장하므로 여덟 갈래가 골고루 덮이고 각 갈래
+ * 안에서 한국/해외·영화/드라마가 섞인다.
+ */
+export function buildPickPool(works: CatalogEntry[], rng: () => number): CatalogEntry[] {
+  return seededShuffle(buildSections(works).flatMap((s) => s.works), rng)
 }
