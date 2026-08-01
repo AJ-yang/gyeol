@@ -25,12 +25,12 @@ function runtimeLabel(minutes: number): string {
  */
 export function WorkDetailSheet({
   work,
-  reason,
+  sources,
   onClose,
 }: {
   work: CatalogEntry | null
-  /** 왜 이 작품이 떴는지. 고른 작품에는 붙이지 않으므로 null일 수 있다 */
-  reason: string | null
+  /** 이 작품을 추천하게 만든, 사용자가 고른 작품들 */
+  sources: CatalogEntry[]
   onClose: () => void
 }) {
   const { detail, loading } = useDetail(work)
@@ -110,10 +110,18 @@ export function WorkDetailSheet({
           )}
         </div>
 
-        {/* 왜 이게 떴는지 알려준다. 근거 없는 추천은 안 믿게 된다. */}
-        {reason !== null && (
+        {/*
+          왜 이게 떴는지 알려준다. 근거 없는 추천은 안 믿게 된다.
+
+          "「제목」과 닿아 있어요"처럼 조사를 붙이지 않는다. 와/과는 앞말의
+          받침에 따라 갈리는데 제목은 한글·영문·숫자로 다 끝나서(「침입자」는
+          "와", 「기생충」은 "과") 규칙을 넣어도 계속 틀린다. 조사가 변하지
+          않는 "에서 이어졌어요"로 쓴다.
+        */}
+        {sources.length > 0 && (
           <p className="mt-4 break-keep rounded-xl bg-neutral-800/60 px-3.5 py-3 text-sm text-neutral-300">
-            {reason}
+            고른 「{sources[0].t}」
+            {sources.length > 1 ? ` 외 ${sources.length - 1}편` : ''}에서 이어졌어요
           </p>
         )}
 

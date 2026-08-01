@@ -1,3 +1,5 @@
+import { workKey, type CatalogEntry } from './types'
+import type { RecommendationMap } from './recommend'
 
 /**
  * 작품 상세를 쪼개 담는 파일 수.
@@ -38,3 +40,19 @@ export function detailChunkPath(chunk: number): string {
   return `details/${String(chunk).padStart(3, '0')}.json`
 }
 
+/**
+ * 고른 작품 중 이 작품을 추천한 것들.
+ *
+ * 추천 목록에 담긴 숫자는 **고른 작품과 같은 매체**의 TMDB id다. 매체를 안
+ * 맞추면 영화 추천에 있는 11423을 TV 11423으로 읽어 엉뚱한 근거가 붙는다.
+ */
+export function recommendationSources(
+  work: CatalogEntry,
+  picks: CatalogEntry[],
+  recommendations: RecommendationMap,
+): CatalogEntry[] {
+  return picks.filter(
+    (pick) =>
+      pick.m === work.m && (recommendations[workKey(pick)] ?? []).includes(work.i),
+  )
+}

@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import type { Catalog } from './types'
+import type { RecommendationMap } from './recommend'
 
 /**
  * 정적 배포라 basePath가 붙는다. fetch 경로에 직접 붙여야 GitHub Pages에서
@@ -34,3 +35,20 @@ export function useCatalog() {
   return { catalog, failed }
 }
 
+/** 추천은 결과 화면에서만 필요하므로 거기서만 부른다. */
+export function useRecommendations(enabled: boolean) {
+  const [map, setMap] = useState<RecommendationMap | null>(null)
+
+  useEffect(() => {
+    if (!enabled) return
+    let alive = true
+    loadJson<RecommendationMap>('/recommendations.json')
+      .then((data) => alive && setMap(data))
+      .catch(() => alive && setMap({}))
+    return () => {
+      alive = false
+    }
+  }, [enabled])
+
+  return map
+}

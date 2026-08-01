@@ -9,10 +9,11 @@ import { ShareCardButton } from '@/components/ShareCardButton'
 import { WorkDetailSheet } from '@/components/WorkDetailSheet'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
 import { breakdown } from '@/lib/gyeol/breakdown'
+import { recommendationSources } from '@/lib/gyeol/details'
 import { matchGyeol } from '@/lib/gyeol/match'
 import { decodePicks } from '@/lib/gyeol/payload'
-import { recommendByGyeol } from '@/lib/gyeol/recommend-gyeol'
-import { useCatalog } from '@/lib/gyeol/use-catalog'
+import { recommend } from '@/lib/gyeol/recommend'
+import { useCatalog, useRecommendations } from '@/lib/gyeol/use-catalog'
 import { workKey, type CatalogEntry } from '@/lib/gyeol/types'
 
 const RECOMMEND_COUNT = 10
@@ -45,6 +46,7 @@ function Result() {
   const params = useSearchParams()
   const payload = params.get('p')
   const { catalog } = useCatalog()
+  const recommendations = useRecommendations(catalog !== null)
   const [open, setOpen] = useState<CatalogEntry | null>(null)
 
   const state = useMemo(() => {
@@ -77,9 +79,9 @@ function Result() {
     )
   }
 
-  // 결 기준으로 뽑는다. 고른 작품의 TMDB 유사작만 쓰면 목록이 통째로
-  // "내가 고른 것과 비슷한 것"이 되어 결과 무관해진다.
-  const picked = recommendByGyeol(state.gyeol, catalog!, state.picks, RECOMMEND_COUNT)
+  const picked = recommendations
+    ? recommend(state.picks, recommendations, catalog!.works, RECOMMEND_COUNT)
+    : []
   const pickedKeys = new Set(state.picks.map(workKey))
 
   return (
@@ -115,7 +117,9 @@ function Result() {
       <section>
         <h2 className="mb-1 text-sm font-bold text-neutral-400">이런 것도 좋아할 거예요</h2>
         <p className="mb-3 break-keep text-xs text-neutral-600">포스터를 누르면 줄거리를 볼 수 있어요</p>
-        {picked.length === 0 ? (
+        {recommendations === null ? (
+          <p className="text-sm text-neutral-600">추천을 불러오는 중…</p>
+        ) : picked.length === 0 ? (
           <p className="break-keep text-sm text-neutral-600">고른 작품이 적어 추천할 것을 찾지 못했어요.</p>
         ) : (
           <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
@@ -143,10 +147,10 @@ function Result() {
       */}
       <WorkDetailSheet
         work={open}
-        reason={
+        sources={
           open !== null && !pickedKeys.has(workKey(open))
-            ? `「${state.gyeol.name}」과 닿아 있어요`
-            : null
+            ? recommendationSources(open, state.picks, recommendations ?? {})
+            : []
         }
         onClose={() => setOpen(null)}
       />
