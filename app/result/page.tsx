@@ -4,6 +4,7 @@
 import { Suspense, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { GyeolBanner } from '@/components/GyeolBanner'
 import { ShareCardButton } from '@/components/ShareCardButton'
 import { WorkDetailSheet } from '@/components/WorkDetailSheet'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
@@ -85,13 +86,24 @@ function Result() {
 
   return (
     <>
-      <header className="text-center">
-        <p className="text-sm text-neutral-500">당신이 자꾸 고르는 이야기</p>
-        <h1 className="mt-2 text-3xl font-black break-keep sm:text-4xl">{state.gyeol.name}</h1>
-        <p className="mx-auto mt-4 max-w-md break-keep leading-relaxed text-neutral-300">
-          {state.gyeol.description}
-        </p>
-      </header>
+      {/*
+        결 고유색을 화면 위에서 은은하게 깐다. 카드와 같은 색이라야 카드를
+        받고 링크를 타고 온 사람이 이어진 것으로 읽는다. 내용 뒤에 깔리도록
+        음수 z-index를 주고 클릭을 막지 않는다.
+
+        `fixed`가 아니라 `absolute`다. 고정하면 아래로 스크롤해도 색이 뷰포트
+        위쪽에 계속 붙어 있어, 포스터 목록을 보는 내내 따라다닌다. 이 색은
+        머리에 속한 것이라 내용과 함께 밀려나야 한다.
+      */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[70vh]"
+        style={{
+          background: `linear-gradient(to bottom, hsla(${state.gyeol.hue}, 72%, 22%, 1), hsla(${state.gyeol.hue}, 72%, 8%, 0.6) 55%, transparent)`,
+        }}
+      />
+
+      <GyeolBanner gyeol={state.gyeol} rows={state.rows} />
 
       <section>
         <h2 className="mb-3 text-sm font-bold text-neutral-400">당신이 고른 {state.picks.length}편</h2>
