@@ -25,12 +25,12 @@ function runtimeLabel(minutes: number): string {
  */
 export function WorkDetailSheet({
   work,
-  sources,
+  reason,
   onClose,
 }: {
   work: CatalogEntry | null
-  /** 이 작품을 추천하게 만든, 사용자가 고른 작품들 */
-  sources: CatalogEntry[]
+  /** 왜 이 작품이 떴는지. 고른 작품에는 붙이지 않으므로 null일 수 있다 */
+  reason: string | null
   onClose: () => void
 }) {
   const { detail, loading } = useDetail(work)
@@ -111,10 +111,9 @@ export function WorkDetailSheet({
         </div>
 
         {/* 왜 이게 떴는지 알려준다. 근거 없는 추천은 안 믿게 된다. */}
-        {sources.length > 0 && (
+        {reason !== null && (
           <p className="mt-4 break-keep rounded-xl bg-neutral-800/60 px-3.5 py-3 text-sm text-neutral-300">
-            고른 「{sources[0].t}」
-            {sources.length > 1 ? ` 외 ${sources.length - 1}편` : ''}과 닿아 있어요
+            {reason}
           </p>
         )}
 
