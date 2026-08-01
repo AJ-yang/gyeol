@@ -59,9 +59,14 @@ export default function PickPage() {
   // 렌더 도중에 router.push를 부르면 React가 다른 컴포넌트를 갱신한다고 막는다.
   // "Cannot update a component (Router) while rendering a different component".
   useEffect(() => {
-    if (!duelsOver) return
-    router.push(`/result/?p=${encodePicks(picks.map((w) => ({ i: w.i, m: w.m })))}`)
-  }, [duelsOver, picks, router])
+    if (!duelsOver || !catalog) return
+    // 결별 경로로 보낸다. 공유 링크의 미리보기를 결마다 다르게 하려면 결 수만큼
+    // 미리 구운 페이지 중 해당하는 것으로 가야 한다 — 정적 배포라 질의 문자열로는
+    // og 태그를 바꿀 수 없다.
+    const top = matchGyeol(picks, catalog, GYEOL_TYPES)[0]
+    const payload = encodePicks(picks.map((w) => ({ i: w.i, m: w.m })))
+    router.push(`/r/${top.id}/?p=${payload}`)
+  }, [duelsOver, catalog, picks, router])
 
   function answerDuel(winner: CatalogEntry | null) {
     if (duel === null) return
