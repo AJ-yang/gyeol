@@ -15,7 +15,7 @@ import { matchGyeol } from '@/lib/gyeol/match'
 import { decodePicks } from '@/lib/gyeol/payload'
 import { recommend } from '@/lib/gyeol/recommend'
 import { useCatalog, useRecommendations } from '@/lib/gyeol/use-catalog'
-import { workKey, type CatalogEntry } from '@/lib/gyeol/types'
+import { workKey, type CatalogEntry, type Gyeol } from '@/lib/gyeol/types'
 
 const RECOMMEND_COUNT = 10
 
@@ -123,7 +123,7 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
         )}
 
         <GyeolBanner gyeol={gyeol} rows={[]} />
-        <GyeolEssay gyeol={gyeol} open back={back} />
+        <GyeolEssay entries={[{ gyeol }]} open back={back} />
 
         <div className="flex flex-col items-center gap-3">
           <Link
@@ -177,7 +177,19 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
 
       <GyeolBanner gyeol={state.gyeol} rows={state.rows} />
 
-      <GyeolEssay gyeol={state.gyeol} back={{ gyeolId: state.gyeol.id, payload: state.payload }} />
+      {/*
+        해설은 비율 막대와 같은 세 결을 싣는다. 1위만 보여주면 나머지 둘이
+        무슨 결인지 알 방법이 없어, 막대만 보고 궁금해진 채로 끝난다.
+      */}
+      <GyeolEssay
+        entries={state.rows
+          .map((row) => ({
+            gyeol: GYEOL_TYPES.find((g) => g.id === row.id),
+            percent: row.percent,
+          }))
+          .filter((e): e is { gyeol: Gyeol; percent: number } => e.gyeol !== undefined)}
+        back={{ gyeolId: state.gyeol.id, payload: state.payload }}
+      />
 
       <section>
         <h2 className="mb-3 text-sm font-bold text-neutral-400">당신이 고른 {state.picks.length}편</h2>
