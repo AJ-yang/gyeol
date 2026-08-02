@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildGyeolPool, buildPickPool } from './pool'
-import { makeRng } from '../rng'
+import { buildGyeolPool } from './pool'
 import { GENRE_INDEX } from './genres'
 import { workKey, type Catalog, type CatalogEntry, type Gyeol } from './types'
 import { makeGyeol } from './gyeol.fixture'
@@ -94,20 +93,3 @@ describe('buildGyeolPool', () => {
   })
 })
 
-describe('buildPickPool', () => {
-  it('섞는다', () => {
-    const ordered = buildGyeolPool(CATALOG, TYPES).map(workKey)
-    expect(buildPickPool(CATALOG, TYPES, makeRng(7)).map(workKey)).not.toEqual(ordered)
-  })
-
-  it('작품을 잃지도 더하지도 않는다', () => {
-    const before = new Set(buildGyeolPool(CATALOG, TYPES).map(workKey))
-    expect(new Set(buildPickPool(CATALOG, TYPES, makeRng(7)).map(workKey))).toEqual(before)
-  })
-
-  it('같은 시드는 같은 순서를 낸다', () => {
-    expect(buildPickPool(CATALOG, TYPES, makeRng(3)).map(workKey)).toEqual(
-      buildPickPool(CATALOG, TYPES, makeRng(3)).map(workKey),
-    )
-  })
-})

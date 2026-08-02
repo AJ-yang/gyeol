@@ -1,4 +1,3 @@
-import { seededShuffle } from '../rng'
 import { matchGyeol } from './match'
 import { workKey, type Catalog, type CatalogEntry, type Gyeol } from './types'
 
@@ -74,17 +73,3 @@ export function buildGyeolPool(catalog: Catalog, gyeolTypes: Gyeol[]): CatalogEn
   return picked
 }
 
-/**
- * 고를 후보를 섞어서 낸다.
- *
- * **결 이름도 장르 이름도 화면에 내보내지 않는다.** 머리말이 있으면 사용자가
- * 작품에 반응하는 대신 라벨에 반응한다. 층화는 무엇을 보여줄지 정하는 데만
- * 쓰고, 보여줄 때는 섞어서 라벨 없이 깐다.
- */
-export function buildPickPool(
-  catalog: Catalog,
-  gyeolTypes: Gyeol[],
-  rng: () => number,
-): CatalogEntry[] {
-  return seededShuffle(buildGyeolPool(catalog, gyeolTypes), rng)
-}

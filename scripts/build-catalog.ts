@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
+import { buildGyeolPool } from '../lib/gyeol/pool'
 import { GYEOL_TYPES } from '../data/gyeol-types'
 import { normalizeGenres } from '../lib/gyeol/genres'
 import { computeIdf } from '../lib/gyeol/idf'
@@ -51,8 +52,22 @@ function main() {
   const json = JSON.stringify(catalog)
   writeFileSync('public/catalog.json', json)
 
+  /*
+    1라운드 그리드 후보를 같이 굽는다.
+    
+    이 계산은 12,595편을 전부 훑어야 해서 데스크톱에서도 168ms가 걸리고,
+    무엇보다 그걸 하려고 클라이언트가 색인 607KB를 통째로 기다려야 했다.
+    후보는 사용자와 무관하게 정해지므로 미리 구워두면 첫 화면이 2.8KB로 뜬다.
+    
+    **카탈로그와 같은 스크립트에서 만들어야 한다.** 후보의 `k`는 이 색인의
+    어휘 인덱스라, 따로 만들면 어휘가 바뀔 때 조용히 어긋난다.
+  */
+  const poolJson = JSON.stringify(buildGyeolPool(catalog, GYEOL_TYPES))
+  writeFileSync('public/pool.json', poolJson)
+
   const matched = entries.filter((e) => e.k.length > 0).length
   console.log(`작품 ${entries.length}편 → public/catalog.json`)
+  console.log(`  1라운드 후보 → public/pool.json (gzip ${(gzipSync(poolJson).length / 1024).toFixed(1)}KB)`)
   console.log(`  어휘 ${vocabulary.length}종`)
   console.log(`  조건 키워드를 1개 이상 가진 작품 ${matched}편 (${((100 * matched) / entries.length).toFixed(1)}%)`)
   console.log(`  raw ${(json.length / 1024).toFixed(0)}KB / gzip ${(gzipSync(json).length / 1024).toFixed(0)}KB`)

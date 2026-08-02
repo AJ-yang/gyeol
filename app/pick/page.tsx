@@ -8,10 +8,9 @@ import { nextDuel } from '@/lib/gyeol/duel'
 import { searchWorks } from '@/lib/gyeol/grid'
 import { matchGyeol } from '@/lib/gyeol/match'
 import { encodePicks } from '@/lib/gyeol/payload'
-import { makeRng } from '@/lib/rng'
-import { buildPickPool } from '@/lib/gyeol/pool'
+import { makeRng, seededShuffle } from '@/lib/rng'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
-import { useCatalog } from '@/lib/gyeol/use-catalog'
+import { useCatalog, usePool } from '@/lib/gyeol/use-catalog'
 import { workKey, type CatalogEntry } from '@/lib/gyeol/types'
 
 /**
@@ -27,7 +26,11 @@ const MAX_DUELS = 5
 
 export default function PickPage() {
   const router = useRouter()
-  const { catalog, failed } = useCatalog()
+  // 후보만 먼저 받아 그리드를 띄우고, 색인은 뒤에서 받는다. 색인은 검색·2라운드·
+  // 결과 판정에만 필요한데, 그걸 기다리느라 첫 화면이 607KB만큼 늦었다.
+  const { pool: candidates, failed: poolFailed } = usePool()
+  const { catalog } = useCatalog()
+  const failed = poolFailed
   const [picks, setPicks] = useState<CatalogEntry[]>([])
   const [query, setQuery] = useState('')
   const [inDuels, setInDuels] = useState(false)
@@ -38,9 +41,10 @@ export default function PickPage() {
   const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31))
 
   const selected = useMemo(() => new Set(picks.map(workKey)), [picks])
+  // 후보 선정은 빌드 때 끝났다. 여기서는 세션마다 순서만 바꾼다.
   const pool = useMemo(
-    () => (catalog ? buildPickPool(catalog, GYEOL_TYPES, makeRng(seed)) : []),
-    [catalog, seed],
+    () => (candidates ? seededShuffle(candidates, makeRng(seed)) : []),
+    [candidates, seed],
   )
   const searchHits = useMemo(
     () => (catalog ? searchWorks(catalog.works, query, 12) : []),
@@ -98,7 +102,7 @@ export default function PickPage() {
     )
   }
 
-  if (!catalog) {
+  if (!candidates) {
     return (
       <main className="flex min-h-dvh items-center justify-center">
         <p className="animate-pulse text-neutral-500">작품을 불러오는 중…</p>
@@ -144,14 +148,16 @@ export default function PickPage() {
           ) : (
             <>
               <span className="break-keep text-sm text-neutral-500">더 고를수록 정확해져요</span>
+              {/* 2라운드는 색인이 있어야 돈다. 보통은 고르는 사이에 도착한다. */}
               <button
                 onClick={() => {
                   setSeen(new Set(picks.map(workKey)))
                   setInDuels(true)
                 }}
-                className="ml-auto shrink-0 rounded-full bg-white px-5 py-2 font-bold text-black"
+                disabled={catalog === null}
+                className="ml-auto shrink-0 rounded-full bg-white px-5 py-2 font-bold text-black disabled:opacity-50"
               >
-                다음
+                {catalog === null ? '준비 중…' : '다음'}
               </button>
             </>
           )}
@@ -166,8 +172,11 @@ export default function PickPage() {
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="드라마·영화 제목으로 검색해서 추가"
-          className="mt-2 w-full rounded-full bg-neutral-900 px-4 py-2.5 text-sm outline-none placeholder:text-neutral-500 focus:ring-2 focus:ring-white/40"
+          disabled={catalog === null}
+          placeholder={
+            catalog === null ? '검색 준비 중…' : '드라마·영화 제목으로 검색해서 추가'
+          }
+          className="mt-2 w-full rounded-full bg-neutral-900 px-4 py-2.5 text-sm outline-none placeholder:text-neutral-500 focus:ring-2 focus:ring-white/40 disabled:opacity-60"
         />
       </header>
 
