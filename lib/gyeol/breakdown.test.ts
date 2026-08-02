@@ -8,6 +8,8 @@ const gyeol = (id: string, name: string): Gyeol => ({
   name,
   description: '',
   catchphrase: '',
+  essay: [],
+  signs: [],
   emoji: '🎬',
   hue: 0,
   keywords: [],

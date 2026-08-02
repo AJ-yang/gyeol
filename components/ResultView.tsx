@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { GyeolBanner } from '@/components/GyeolBanner'
+import { GyeolEssay } from '@/components/GyeolEssay'
 import { ShareCardButton } from '@/components/ShareCardButton'
 import { WorkDetailSheet } from '@/components/WorkDetailSheet'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
@@ -102,6 +103,7 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
           }}
         />
         <GyeolBanner gyeol={gyeol} rows={[]} />
+        <GyeolEssay gyeol={gyeol} open />
         <div className="flex flex-col items-center gap-3">
           <Link
             href="/pick/"
@@ -151,6 +153,8 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
       />
 
       <GyeolBanner gyeol={state.gyeol} rows={state.rows} />
+
+      <GyeolEssay gyeol={state.gyeol} />
 
       <section>
         <h2 className="mb-3 text-sm font-bold text-neutral-400">당신이 고른 {state.picks.length}편</h2>

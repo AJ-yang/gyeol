@@ -1,5 +1,6 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
+import { computeAffinity, nearbyGyeols } from '../lib/gyeol/nearby'
 import { buildGyeolPool } from '../lib/gyeol/pool'
 import { GYEOL_TYPES } from '../data/gyeol-types'
 import { normalizeGenres } from '../lib/gyeol/genres'
@@ -65,9 +66,28 @@ function main() {
   const poolJson = JSON.stringify(buildGyeolPool(catalog, GYEOL_TYPES))
   writeFileSync('public/pool.json', poolJson)
 
+  /*
+    가까운 결도 같이 굽는다.
+
+    **키워드 교집합으로 재면 안 된다.** 25개 결은 서로 구별되도록 겹치지 않게
+    정의되어 있어서, 그렇게 재면 15개 결에 이웃이 하나도 안 나온다. 작품을
+    매개로 — 한 작품이 두 결의 상위에 함께 걸린 횟수로 — 재야 25개 전부
+    이웃이 생긴다.
+
+    계산에 12,595편을 훑어야 하므로 클라이언트에서 돌릴 수 없다. 결과는
+    결마다 id 세 개뿐이라 파일이 1KB도 안 된다.
+  */
+  const affinity = computeAffinity(catalog, GYEOL_TYPES)
+  const nearby = Object.fromEntries(
+    GYEOL_TYPES.map((g) => [g.id, nearbyGyeols(g.id, affinity, GYEOL_TYPES, 3).map((n) => n.id)]),
+  )
+  const nearbyJson = JSON.stringify(nearby)
+  writeFileSync('public/nearby.json', nearbyJson)
+
   const matched = entries.filter((e) => e.k.length > 0).length
   console.log(`작품 ${entries.length}편 → public/catalog.json`)
   console.log(`  1라운드 후보 → public/pool.json (gzip ${(gzipSync(poolJson).length / 1024).toFixed(1)}KB)`)
+  console.log(`  가까운 결 → public/nearby.json (${nearbyJson.length}B, 이웃 없는 결 ${Object.values(nearby).filter((v) => v.length === 0).length}개)`)
   console.log(`  어휘 ${vocabulary.length}종`)
   console.log(`  조건 키워드를 1개 이상 가진 작품 ${matched}편 (${((100 * matched) / entries.length).toFixed(1)}%)`)
   console.log(`  raw ${(json.length / 1024).toFixed(0)}KB / gzip ${(gzipSync(json).length / 1024).toFixed(0)}KB`)

@@ -13,6 +13,8 @@ export function makeGyeol(partial: Partial<Gyeol> & Pick<Gyeol, 'id'>): Gyeol {
     name: partial.id,
     description: '설명'.repeat(20),
     catchphrase: '한 줄',
+    essay: ['해설'],
+    signs: ['순간'],
     emoji: '🎬',
     hue: 0,
     keywords: [],
