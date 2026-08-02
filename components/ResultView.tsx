@@ -8,6 +8,7 @@ import { GyeolEssay } from '@/components/GyeolEssay'
 import { ShareCardButton } from '@/components/ShareCardButton'
 import { WorkDetailSheet } from '@/components/WorkDetailSheet'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
+import { readReturn, returnHref } from '@/lib/gyeol/back-link'
 import { breakdown } from '@/lib/gyeol/breakdown'
 import { recommendationSources } from '@/lib/gyeol/details'
 import { matchGyeol } from '@/lib/gyeol/match'
@@ -74,7 +75,7 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
     const scores = matchGyeol(picks, catalog, GYEOL_TYPES)
     const gyeol = GYEOL_TYPES.find((g) => g.id === scores[0].id)!
     // 공유 카드에 들어갈 상위 3개. 1위만 보여주면 견줄 것이 없다.
-    return { broken: false as const, gyeol, picks, rows: breakdown(scores, GYEOL_TYPES, 3) }
+    return { broken: false as const, gyeol, picks, payload, rows: breakdown(scores, GYEOL_TYPES, 3) }
   }, [catalog, payload])
 
   if (!state) {
@@ -93,6 +94,9 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
         </div>
       )
     }
+    // 이웃 결을 구경하러 온 경우. 자기 결과로 돌아갈 길을 잃지 않게 한다.
+    const back = readReturn(params)
+
     return (
       <>
         <div
@@ -102,16 +106,35 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
             background: `linear-gradient(to bottom, hsla(${gyeol.hue}, 72%, 22%, 1), hsla(${gyeol.hue}, 72%, 8%, 0.6) 55%, transparent)`,
           }}
         />
+
+        {/*
+          돌아가는 길은 위에 둔다. 해설이 길어서 아래에만 있으면 다 읽고
+          스크롤을 내려야 보이는데, 구경하다 말고 돌아가고 싶을 때가 더 많다.
+        */}
+        {back !== null && (
+          <div className="-mb-4">
+            <Link
+              href={returnHref(back)}
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-2 text-sm break-keep transition hover:bg-white/20"
+            >
+              <span aria-hidden>←</span> 내 결과로 돌아가기
+            </Link>
+          </div>
+        )}
+
         <GyeolBanner gyeol={gyeol} rows={[]} />
-        <GyeolEssay gyeol={gyeol} open />
+        <GyeolEssay gyeol={gyeol} open back={back} />
+
         <div className="flex flex-col items-center gap-3">
           <Link
             href="/pick/"
             className="rounded-full bg-white px-7 py-3.5 font-bold text-black"
           >
-            나는 무슨 결일까?
+            {back === null ? '나는 무슨 결일까?' : '다시 해보기'}
           </Link>
-          <p className="break-keep text-sm text-neutral-500">1분이면 나와요</p>
+          <p className="break-keep text-sm text-neutral-500">
+            {back === null ? '1분이면 나와요' : '고른 작품을 바꿔서 다시 볼 수 있어요'}
+          </p>
         </div>
       </>
     )
@@ -154,7 +177,7 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
 
       <GyeolBanner gyeol={state.gyeol} rows={state.rows} />
 
-      <GyeolEssay gyeol={state.gyeol} />
+      <GyeolEssay gyeol={state.gyeol} back={{ gyeolId: state.gyeol.id, payload: state.payload }} />
 
       <section>
         <h2 className="mb-3 text-sm font-bold text-neutral-400">당신이 고른 {state.picks.length}편</h2>

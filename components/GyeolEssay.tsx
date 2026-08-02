@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { neighbourHref, type ReturnTo } from '@/lib/gyeol/back-link'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
 import type { Gyeol } from '@/lib/gyeol/types'
 
@@ -38,7 +39,16 @@ function tone(hue: number, lightness: number): string {
  * 추천과 공유 버튼이 화면 밖으로 밀리기 때문이다. 결 소개 페이지(`?p=` 없이
  * 들어온 경우)에서는 그 글이 본문이므로 처음부터 펼쳐 둔다.
  */
-export function GyeolEssay({ gyeol, open: initiallyOpen = false }: { gyeol: Gyeol; open?: boolean }) {
+export function GyeolEssay({
+  gyeol,
+  open: initiallyOpen = false,
+  back = null,
+}: {
+  gyeol: Gyeol
+  open?: boolean
+  /** 이웃 결로 넘어가도 잃지 않을 원래 결과. 이웃 링크에 실어 보낸다 */
+  back?: ReturnTo | null
+}) {
   const [open, setOpen] = useState(initiallyOpen)
   const [nearby, setNearby] = useState<Gyeol[]>([])
 
@@ -97,7 +107,7 @@ export function GyeolEssay({ gyeol, open: initiallyOpen = false }: { gyeol: Gyeo
                 {nearby.map((other) => (
                   <Link
                     key={other.id}
-                    href={`/r/${other.id}/`}
+                    href={neighbourHref(other.id, back)}
                     className="rounded-full px-3.5 py-2 text-sm break-keep transition hover:brightness-125"
                     style={{ backgroundColor: `hsla(${other.hue}, 72%, 30%, 1)` }}
                   >
