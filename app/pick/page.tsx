@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Duel } from '@/components/Duel'
+import { RoundIntro } from '@/components/RoundIntro'
 import { WorkGrid } from '@/components/WorkGrid'
 import { nextDuel } from '@/lib/gyeol/duel'
 import { searchWorks } from '@/lib/gyeol/grid'
@@ -33,7 +34,11 @@ export default function PickPage() {
   const failed = poolFailed
   const [picks, setPicks] = useState<CatalogEntry[]>([])
   const [query, setQuery] = useState('')
-  const [inDuels, setInDuels] = useState(false)
+  /**
+   * 진행 단계. 두 라운드가 형식이 달라서 각각 시작 전에 안내를 끼운다.
+   * 예고 없이 형식이 바뀌면 사용자가 규칙을 화면에서 역추적해야 한다.
+   */
+  const [stage, setStage] = useState<'intro' | 'grid' | 'duelIntro' | 'duels'>('intro')
   const [duelsDone, setDuelsDone] = useState(0)
   const [seen, setSeen] = useState<ReadonlySet<string>>(new Set())
 
@@ -53,12 +58,12 @@ export default function PickPage() {
 
   // 2라운드는 1라운드가 잡은 기준선 위에서 붙어 있는 결을 가른다.
   const duel = useMemo(() => {
-    if (!catalog || !inDuels || duelsDone >= MAX_DUELS) return null
+    if (!catalog || stage !== 'duels' || duelsDone >= MAX_DUELS) return null
     return nextDuel(picks, matchGyeol(picks, catalog, GYEOL_TYPES), catalog, GYEOL_TYPES, seen)
-  }, [catalog, inDuels, duelsDone, picks, seen])
+  }, [catalog, stage, duelsDone, picks, seen])
 
   // 대결이 끝났거나 더 물을 것이 없는 상태.
-  const duelsOver = inDuels && catalog !== null && duel === null
+  const duelsOver = stage === 'duels' && catalog !== null && duel === null
 
   // 렌더 도중에 router.push를 부르면 React가 다른 컴포넌트를 갱신한다고 막는다.
   // "Cannot update a component (Router) while rendering a different component".
@@ -119,7 +124,46 @@ export default function PickPage() {
     )
   }
 
-  if (inDuels) {
+  if (stage === 'intro') {
+    return (
+      <RoundIntro
+        step="1라운드"
+        title="재미있게 본 작품 고르기"
+        lead="많이 본 영화와 드라마 50편을 보여드려요. 그중 재미있게 본 것을 골라주세요."
+        rules={[
+          '5편 이상 골라야 결과가 나와요. 더 고를수록 정확해집니다.',
+          '장르 이름은 일부러 안 붙였어요. 라벨 말고 작품을 보고 고르시라고요.',
+          '찾는 작품이 없으면 위쪽 검색으로 직접 추가할 수 있어요.',
+        ]}
+        note="여기서 고른 것이 기준선이 됩니다. 안 본 작품은 그냥 넘기세요 — 모르는 걸 고르면 결이 흐려져요."
+        action="작품 고르러 가기"
+        onStart={() => setStage('grid')}
+      />
+    )
+  }
+
+  if (stage === 'duelIntro') {
+    return (
+      <RoundIntro
+        step="2라운드"
+        title="둘 중 하나 고르기"
+        lead="이제 두 작품씩 짝지어 보여드려요. 더 끌리는 쪽을 골라주세요. 최대 5번입니다."
+        rules={[
+          '1라운드에서 비슷하게 나온 결들을 가르는 질문이에요.',
+          '안 본 작품이거나 고르기 어려우면 “잘 모르겠어요”를 누르면 됩니다.',
+          '넘겨도 결과는 나와요. 다만 덜 뾰족해집니다.',
+        ]}
+        note="이 라운드에서 정확도가 가장 많이 올라갑니다. 1라운드만으로는 비슷한 결 여럿이 남아 있거든요."
+        action="시작하기"
+        onStart={() => {
+          setSeen(new Set(picks.map(workKey)))
+          setStage('duels')
+        }}
+      />
+    )
+  }
+
+  if (stage === 'duels') {
     return (
       <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center gap-6 px-4 py-6">
         <Duel
@@ -150,10 +194,7 @@ export default function PickPage() {
               <span className="break-keep text-sm text-neutral-500">더 고를수록 정확해져요</span>
               {/* 2라운드는 색인이 있어야 돈다. 보통은 고르는 사이에 도착한다. */}
               <button
-                onClick={() => {
-                  setSeen(new Set(picks.map(workKey)))
-                  setInDuels(true)
-                }}
+                onClick={() => setStage('duelIntro')}
                 disabled={catalog === null}
                 className="ml-auto shrink-0 rounded-full bg-white px-5 py-2 font-bold text-black disabled:opacity-50"
               >
