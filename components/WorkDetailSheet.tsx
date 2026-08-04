@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import { useDetail } from '@/lib/gyeol/use-detail'
 import { formatMonth, shownProviders, useProviders } from '@/lib/gyeol/use-providers'
 import { GENRE_LABELS, type CatalogEntry } from '@/lib/gyeol/types'
@@ -36,19 +36,63 @@ export function WorkDetailSheet({
 }) {
   const { detail, loading } = useDetail(work)
   const providers = useProviders(work !== null)
+  const panel = useRef<HTMLDivElement>(null)
+  const titleId = useId()
 
-  // 열려 있는 동안 Esc로 닫고, 뒤 화면이 같이 스크롤되지 않게 막는다.
+  /**
+   * 열려 있는 동안의 키보드 처리.
+   *
+   * Esc로 닫고, 뒤 화면이 같이 스크롤되지 않게 막고, **탭이 시트 밖으로 나가지
+   * 않게 가둔다.** 가두지 않으면 시트가 떠 있는데 초점은 뒤 화면의 포스터로
+   * 옮겨가서, 키보드 사용자는 자기가 어디에 있는지 알 수 없게 된다.
+   *
+   * 닫을 때는 원래 있던 자리로 초점을 되돌린다. 안 그러면 목록의 처음으로
+   * 튕겨 나가 방금 누른 포스터를 다시 찾아야 한다.
+   */
   useEffect(() => {
     if (work === null) return
+    const opener = document.activeElement as HTMLElement | null
+
+    const focusables = () =>
+      panel.current === null
+        ? []
+        : [
+            ...panel.current.querySelectorAll<HTMLElement>(
+              'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+            ),
+          ]
+
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const items = focusables()
+      if (items.length === 0) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      const active = document.activeElement
+      // 양 끝에서 넘어갈 때만 손댄다. 가운데서는 브라우저 기본 동작이 맞다.
+      if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      } else if (event.shiftKey && (active === first || !panel.current?.contains(active))) {
+        event.preventDefault()
+        last.focus()
+      }
     }
+
+    // 열리자마자 시트 안으로 초점을 옮긴다. 스크린리더가 제목부터 읽는다.
+    panel.current?.focus()
+
     document.addEventListener('keydown', onKey)
     const previous = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = previous
+      opener?.focus?.()
     }
   }, [work, onClose])
 
@@ -65,8 +109,13 @@ export function WorkDetailSheet({
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
     >
       <div
+        ref={panel}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
-        className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-neutral-900 p-5 sm:rounded-3xl"
+        className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-neutral-900 p-5 outline-none sm:rounded-3xl"
       >
         <div className="flex gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -76,7 +125,9 @@ export function WorkDetailSheet({
             className="h-36 w-24 shrink-0 rounded-lg bg-neutral-800 object-cover"
           />
           <div className="min-w-0 flex-1">
-            <h3 className="break-keep text-lg font-bold leading-snug">{work.t}</h3>
+            <h3 id={titleId} className="break-keep text-lg font-bold leading-snug">
+              {work.t}
+            </h3>
             <p className="mt-1.5 text-sm text-neutral-400">
               {[work.y > 0 ? work.y : null, work.m === 0 ? '영화' : '드라마', runtime]
                 .filter(Boolean)
