@@ -8,7 +8,7 @@ import { GyeolEssay } from '@/components/GyeolEssay'
 import { ShareCardButton } from '@/components/ShareCardButton'
 import { WorkDetailSheet } from '@/components/WorkDetailSheet'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
-import { readReturn, returnHref } from '@/lib/gyeol/back-link'
+import { absoluteResultHref, readReturn, returnHref } from '@/lib/gyeol/back-link'
 import { breakdown } from '@/lib/gyeol/breakdown'
 import { recommendationSources } from '@/lib/gyeol/details'
 import { matchGyeol } from '@/lib/gyeol/match'
@@ -221,7 +221,18 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
         위에 둔다. 카드에는 고른 작품의 포스터가 들어간다.
       */}
       <div className="flex flex-col items-center gap-5">
-        <ShareCardButton gyeol={state.gyeol} rows={state.rows} picks={state.picks} />
+        <ShareCardButton
+          gyeol={state.gyeol}
+          rows={state.rows}
+          picks={state.picks}
+          // 이미지와 함께 보낼 주소. 서버에서는 origin을 알 수 없으므로 빈 값이
+          // 되지만, 이 버튼은 클라이언트에서만 눌린다.
+          shareUrl={absoluteResultHref(
+            typeof location === 'undefined' ? '' : location.origin,
+            process.env.NEXT_PUBLIC_BASE_PATH ?? '',
+            { gyeolId: state.gyeol.id, payload: state.payload },
+          )}
+        />
         <Link href="/pick/" className="text-sm text-neutral-400 underline">
           다시 하기
         </Link>

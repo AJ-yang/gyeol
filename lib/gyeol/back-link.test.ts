@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { neighbourHref, readReturn, returnHref, type ReturnTo } from './back-link'
+import { absoluteResultHref, neighbourHref, readReturn, returnHref, type ReturnTo } from './back-link'
 
 const mine: ReturnTo = { gyeolId: 'sound', payload: 'AbC-_123' }
 
@@ -46,5 +46,26 @@ describe('readReturn', () => {
 
   it('빈 값은 없는 것으로 본다', () => {
     expect(readReturn(params('from=&fp=AbC'))).toBeNull()
+  })
+})
+
+describe('absoluteResultHref', () => {
+  it('출처와 basePath를 붙여 완전한 주소를 만든다', () => {
+    expect(absoluteResultHref('https://aj-yang.github.io', '/gyeol', mine)).toBe(
+      'https://aj-yang.github.io/gyeol/r/sound/?p=AbC-_123',
+    )
+  })
+
+  it('basePath가 없으면 그대로 붙인다', () => {
+    expect(absoluteResultHref('http://localhost:3100', '', mine)).toBe(
+      'http://localhost:3100/r/sound/?p=AbC-_123',
+    )
+  })
+
+  it('슬래시가 겹치지 않는다', () => {
+    // 겹치면 //r/... 이 되어 링크가 죽는다.
+    expect(absoluteResultHref('https://a.io/', '/gyeol/', mine)).toBe(
+      'https://a.io/gyeol/r/sound/?p=AbC-_123',
+    )
   })
 })
