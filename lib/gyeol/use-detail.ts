@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { detailChunk, detailChunkPath, type DetailChunk, type WorkDetail } from './details'
+import type { RecommendationMap } from './recommend'
 import { workKey, type CatalogEntry } from './types'
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? ''
@@ -65,4 +66,46 @@ export function useDetail(work: CatalogEntry | null) {
 
   const fresh = key !== null && loaded?.key === key
   return { detail: fresh ? loaded.detail : null, loading: key !== null && !fresh }
+}
+
+/**
+ * 고른 작품들의 추천을 모은다.
+ *
+ * 예전에는 12,595편의 추천을 한 파일(430KB)로 받았다. 정작 쓰는 것은 고른
+ * 열몇 편의 것뿐이라, 상세와 같은 청크에서 필요한 조각만 가져온다. 청크
+ * 캐시를 상세와 공유하므로 고른 작품의 포스터를 누르면 이미 받아둔 것이 뜬다.
+ *
+ * 다 받기 전에는 빈 지도를 낸다. `recommend`는 키가 없으면 없는 것으로 읽으니
+ * 추천 자리가 잠깐 비었다가 채워진다.
+ */
+export function usePickRecommendations(picks: CatalogEntry[]): RecommendationMap | null {
+  const [map, setMap] = useState<RecommendationMap | null>(null)
+
+  // 고른 작품이 바뀌지 않으면 다시 받지 않는다. 배열은 렌더마다 새로 만들어진다.
+  const keys = picks.map(workKey).join(',')
+
+  useEffect(() => {
+    // 고를 것이 없으면 받을 것도 없다. 여기서 setMap을 부르면 렌더가 한 번 더
+    // 돌므로, 빈 경우는 아래에서 값으로 파생시킨다.
+    if (picks.length === 0) return
+    let alive = true
+    const wanted = [...new Set(picks.map(detailChunk))]
+    Promise.all(wanted.map(loadChunk)).then((chunks) => {
+      if (!alive) return
+      const merged: RecommendationMap = {}
+      for (const chunk of chunks) {
+        for (const [key, detail] of Object.entries(chunk)) {
+          if (detail.c !== undefined) merged[key] = detail.c
+        }
+      }
+      setMap(merged)
+    })
+    return () => {
+      alive = false
+    }
+    // 키 문자열로만 비교한다. picks 배열 자체는 렌더마다 새 참조다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keys])
+
+  return picks.length === 0 ? {} : map
 }

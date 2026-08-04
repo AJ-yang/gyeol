@@ -14,7 +14,8 @@ import { recommendationSources } from '@/lib/gyeol/details'
 import { matchGyeol } from '@/lib/gyeol/match'
 import { decodePicks } from '@/lib/gyeol/payload'
 import { recommend } from '@/lib/gyeol/recommend'
-import { useCatalog, useRecommendations } from '@/lib/gyeol/use-catalog'
+import { useCatalog } from '@/lib/gyeol/use-catalog'
+import { usePickRecommendations } from '@/lib/gyeol/use-detail'
 import { workKey, type CatalogEntry, type Gyeol } from '@/lib/gyeol/types'
 
 const RECOMMEND_COUNT = 10
@@ -57,7 +58,7 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
   const params = useSearchParams()
   const payload = params.get('p')
   const { catalog } = useCatalog()
-  const recommendations = useRecommendations(catalog !== null)
+
   const [open, setOpen] = useState<CatalogEntry | null>(null)
 
   const state = useMemo(() => {
@@ -77,6 +78,12 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
     // 공유 카드에 들어갈 상위 3개. 1위만 보여주면 견줄 것이 없다.
     return { broken: false as const, gyeol, picks, payload, rows: breakdown(scores, GYEOL_TYPES, 3) }
   }, [catalog, payload])
+
+  // 훅은 조건부로 못 부르므로, 아직 결과가 아닐 때는 빈 배열을 넘긴다.
+  // 고른 작품이 든 청크만 받아 추천을 모은다 — 예전에는 430KB를 통째로 받았다.
+  const recommendations = usePickRecommendations(
+    state !== null && !('landing' in state) && !state.broken ? state.picks : [],
+  )
 
   if (!state) {
     return <p className="animate-pulse py-20 text-center text-neutral-500">결을 읽는 중…</p>

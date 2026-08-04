@@ -23,6 +23,14 @@ export type WorkDetail = {
   s?: number
   /** 한국에서 구독으로 볼 수 있는 곳(제공처 id). 없으면 필드 자체가 없다 */
   w?: number[]
+  /**
+   * 이 작품을 좋아한 사람에게 권할 만한 작품(같은 매체의 TMDB id).
+   *
+   * 추천을 한 파일로 합치면 결과 화면이 430KB를 받는데, 실제로 필요한 것은
+   * 고른 작품 열몇 편의 것뿐이다. 상세와 같은 청크에 담아 필요한 조각만
+   * 받는다 — 청크 하나가 0.8KB 늘고 캐시도 상세와 공유된다.
+   */
+  c?: number[]
 }
 
 export type DetailChunk = Record<string, WorkDetail>

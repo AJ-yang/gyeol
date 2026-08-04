@@ -3,7 +3,11 @@ import { gzipSync } from 'node:zlib'
 import type { Catalog } from '../lib/gyeol/types'
 
 /**
- * 작품별 TMDB 추천을 public/recommendations.json 하나로 굽는다.
+ * 작품별 TMDB 추천을 data/recommendations.json 하나로 굽는다.
+ *
+ * **public이 아니라 data에 쓴다.** 클라이언트는 이 파일을 직접 받지 않는다 —
+ * fetch-details가 읽어 작품 상세 청크에 나눠 담는다. public에 두면 아무도 안
+ * 받는 430KB가 배포에 계속 실린다.
  *
  * 처음에는 작품마다 파일을 쪼개 클라이언트가 고른 것만 받게 하려 했다.
  * 재보니 전체를 합쳐도 gzip 430KB로, 이미 통째로 내려보내는 색인(607KB)보다
@@ -66,10 +70,10 @@ async function main() {
   process.stderr.write('\n')
 
   const json = JSON.stringify(out)
-  writeFileSync('public/recommendations.json', json)
+  writeFileSync('data/recommendations.json', json)
 
   const total = kept + dropped
-  console.log(`추천 ${written}건 조회 → public/recommendations.json`)
+  console.log(`추천 ${written}건 조회 → data/recommendations.json`)
   console.log(`  담긴 작품 ${Object.keys(out).length}개 / 추천이 하나도 안 남아 제외 ${empty}건 (${((100 * empty) / written).toFixed(1)}%)`)
   console.log(`  색인 안 추천 ${kept}건 / 색인 밖이라 버린 것 ${dropped}건 (유지율 ${((100 * kept) / Math.max(total, 1)).toFixed(1)}%)`)
   console.log(`  raw ${(json.length / 1024).toFixed(0)}KB / gzip ${(gzipSync(json).length / 1024).toFixed(0)}KB`)

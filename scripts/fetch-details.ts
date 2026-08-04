@@ -200,6 +200,29 @@ async function main() {
     }),
   )
 
+  /*
+    추천을 상세 옆에 담는다.
+
+    별도 파일로 두면 결과 화면이 430KB를 통째로 받는데, 정작 필요한 것은 고른
+    작품 열몇 편의 것뿐이다. 같은 청크에 넣으면 필요한 조각만 받게 되고,
+    포스터를 눌렀을 때 쓰는 캐시와도 공유된다.
+  */
+  let withRecommendations = 0
+  try {
+    const recs = JSON.parse(readFileSync('data/recommendations.json', 'utf8')) as Record<string, number[]>
+    for (const work of works) {
+      const key = workKey(work)
+      const ids = recs[key]
+      const detail = details.get(key)
+      if (detail === undefined || ids === undefined || ids.length === 0) continue
+      detail.c = ids
+      withRecommendations += 1
+    }
+  } catch {
+    // 아직 추천을 안 구웠을 수 있다. 없으면 추천 없이 나머지를 굽는다.
+    console.warn('  data/recommendations.json 없음 — 추천 없이 진행한다')
+  }
+
   // 청크로 나눠 쓴다. 매번 통째로 지우고 다시 써야 지난 실행의 잔재가 안 남는다.
   rmSync('public/details', { recursive: true, force: true })
   mkdirSync('public/details', { recursive: true })
@@ -229,6 +252,7 @@ async function main() {
   console.log(`상세 ${details.size}건 → public/details/ (${CHUNK_COUNT}개 청크)`)
   console.log(`  조회 실패 ${failed}건 / 한국어 줄거리 없어 영어로 메운 것 ${filled}건`)
   console.log(`  끝내 줄거리 없는 작품 ${noOverview}건 (${((100 * noOverview) / Math.max(details.size, 1)).toFixed(1)}%)`)
+  console.log(`  추천이 담긴 작품 ${withRecommendations}건`)
   console.log(`  한국 구독으로 볼 수 있는 작품 ${withProvider}건 (${((100 * withProvider) / Math.max(details.size, 1)).toFixed(1)}%) / 제공처 ${providerNames.size}종`)
   console.log(`  전체 raw ${(raw / 1024 / 1024).toFixed(1)}MB / gzip ${(gzip / 1024).toFixed(0)}KB`)
   console.log(`  청크 하나 평균 gzip ${(gzip / CHUNK_COUNT / 1024).toFixed(1)}KB / 최대 ${(biggest / 1024).toFixed(1)}KB`)
