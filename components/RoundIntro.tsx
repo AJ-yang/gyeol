@@ -1,4 +1,11 @@
-import { AMBER, AMBER_SOFT, AmberButton, Perforations, ProjectorBeam } from '@/components/cinema'
+import {
+  Perforations,
+  ProjectorBeam,
+  VELVET_LINE,
+  VELVET_SOFT,
+  VELVET_TEXT,
+  VelvetButton,
+} from '@/components/cinema'
 
 /**
  * 라운드 시작 전 안내 화면.
@@ -40,12 +47,12 @@ export function RoundIntro({
         <div className="px-6 pt-7 pb-6">
           {/*
             자간을 벌리지 않는다. 한글에 큰 자간을 주면 "1 라 운 드"처럼
-            글자가 흩어져 오히려 대충 만든 것으로 보인다. 대신 앰버 알약으로
+            글자가 흩어져 오히려 대충 만든 것으로 보인다. 대신 커튼색 알약으로
             묶어 표시 역할을 준다.
           */}
           <span
             className="inline-block rounded-full px-2.5 py-1 text-[11px] font-bold"
-            style={{ backgroundColor: AMBER_SOFT, color: AMBER }}
+            style={{ backgroundColor: VELVET_SOFT, color: VELVET_TEXT }}
           >
             {step}
           </span>
@@ -70,7 +77,7 @@ export function RoundIntro({
                 <span
                   aria-hidden
                   className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-                  style={{ backgroundColor: AMBER_SOFT, color: AMBER }}
+                  style={{ backgroundColor: VELVET_SOFT, color: VELVET_TEXT }}
                 >
                   {index + 1}
                 </span>
@@ -81,7 +88,7 @@ export function RoundIntro({
 
           <p
             className="mt-6 break-keep border-l-2 pl-3.5 text-xs leading-relaxed text-neutral-400"
-            style={{ borderColor: 'rgba(224,176,100,0.45)' }}
+            style={{ borderColor: VELVET_LINE }}
           >
             {note}
           </p>
@@ -90,9 +97,9 @@ export function RoundIntro({
         <Perforations className="h-6 w-full border-t border-white/5" />
       </section>
 
-      <AmberButton onClick={onStart} className="mt-7 w-full max-w-sm">
+      <VelvetButton onClick={onStart} className="mt-7 w-full max-w-sm">
         {action}
-      </AmberButton>
+      </VelvetButton>
     </main>
   )
 }

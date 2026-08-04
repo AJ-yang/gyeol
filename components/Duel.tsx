@@ -1,6 +1,6 @@
 'use client'
 
-import { AMBER } from '@/components/cinema'
+import { VELVET_TEXT } from '@/components/cinema'
 import type { Duel as DuelData } from '@/lib/gyeol/duel'
 import type { CatalogEntry } from '@/lib/gyeol/types'
 
@@ -27,11 +27,11 @@ export function Duel({
     <div className="flex flex-col gap-6">
       <div className="text-center">
         {/*
-          지금 몇 번째인지만 앰버로 짚는다. 포스터 두 장이 화면의 전부라
+          지금 몇 번째인지만 커튼색으로 짚는다. 포스터 두 장이 화면의 전부라
           테두리나 배경까지 물들이면 비교가 어려워진다.
         */}
         <p className="text-sm text-neutral-500">
-          <span className="font-bold" style={{ color: AMBER }}>
+          <span className="font-bold" style={{ color: VELVET_TEXT }}>
             {round}
           </span>{' '}
           / {total}

@@ -4,20 +4,34 @@
  * 홈과 라운드 안내가 같은 언어를 쓰게 하려고 한곳에 모은다. 각자 비슷하게
  * 그려두면 한쪽만 고쳤을 때 조용히 어긋난다.
  *
- * **앰버는 결과 이전에만 쓴다.** 결 고유색은 결과가 나온 뒤에 등장하는 것이라,
- * 그 전 화면에서 미리 쓰면 색이 무엇을 뜻하는지가 흐려진다. 극장 조명색을
- * 빌려 "아직 상영 전"이라는 별도의 톤을 만든다.
+ * **벨벳 레드는 결과 이전에만 쓴다.** 결 고유색은 결과가 나온 뒤에 등장하는
+ * 것이라, 그 전 화면에서 미리 쓰면 색이 무엇을 뜻하는지가 흐려진다. 극장
+ * 커튼색을 빌려 "아직 상영 전"이라는 별도의 톤을 만들고, 결과에서 색이 바뀌는
+ * 것 자체가 "나왔다"는 신호가 된다.
+ *
+ * **채워진 면과 글씨에 다른 값을 쓴다.** 하나로 통일하면 둘 중 하나가 반드시
+ * 안 보인다 — 버튼에 쓸 만큼 진한 빨강(#C1272D)은 검은 배경 위 작은 글씨로
+ * 3.39:1이라 AA(4.5) 미달이고, 글씨에 쓸 만큼 밝은 빨강은 흰 글씨를 얹을 수
+ * 없다. 아래 값은 모두 계산해서 고른 것이다.
  */
-export const AMBER = '#e0b064'
 
-/** 앰버를 옅게 깐 배경. 배지와 강조에 쓴다. */
-export const AMBER_SOFT = 'rgba(224,176,100,0.16)'
+/** 채워진 면. 흰 글씨와 5.84:1 */
+export const VELVET = '#C1272D'
+
+/** 어두운 배경 위 글씨·아이콘. #0a0a0a와 5.95:1 */
+export const VELVET_TEXT = '#EF5A63'
+
+/** 옅게 깔아 쓰는 배경. 배지와 강조에 쓴다 */
+export const VELVET_SOFT = 'rgba(193,39,45,0.18)'
+
+/** 세로선·테두리처럼 존재만 알리면 되는 곳 */
+export const VELVET_LINE = 'rgba(239,90,99,0.45)'
 
 /**
- * 영사기 빛.
+ * 커튼에 닿은 빛.
  *
- * 위쪽 한 점에서 퍼지는 따뜻한 빛으로 시선을 가운데로 모은다. 내용 뒤에
- * 깔리도록 음수 z-index를 주고 클릭을 막지 않는다.
+ * 위쪽에서 퍼지는 붉은 빛으로 시선을 가운데로 모은다. 내용 뒤에 깔리도록
+ * 음수 z-index를 주고 클릭을 막지 않는다.
  */
 export function ProjectorBeam() {
   return (
@@ -26,7 +40,7 @@ export function ProjectorBeam() {
       className="pointer-events-none absolute inset-0 -z-10"
       style={{
         background:
-          'radial-gradient(120% 70% at 50% -10%, rgba(224,176,100,0.20), rgba(224,176,100,0.05) 42%, transparent 70%)',
+          'radial-gradient(120% 70% at 50% -10%, rgba(193,39,45,0.28), rgba(120,20,26,0.12) 42%, transparent 70%)',
       }}
     />
   )
@@ -49,8 +63,8 @@ export function Perforations({ className }: { className: string }) {
   )
 }
 
-/** 상영 전 화면의 주 버튼. 극장 조명색이라 어두운 배경에서 유일하게 밝다. */
-export function AmberButton({
+/** 상영 전 화면의 주 버튼. 커튼색 바탕에 흰 글씨다. */
+export function VelvetButton({
   children,
   onClick,
   className = '',
@@ -62,8 +76,8 @@ export function AmberButton({
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-8 py-4 text-lg font-bold text-black transition hover:brightness-110 active:scale-[0.99] ${className}`}
-      style={{ backgroundColor: AMBER }}
+      className={`rounded-full px-8 py-4 text-lg font-bold text-white transition hover:brightness-110 active:scale-[0.99] ${className}`}
+      style={{ backgroundColor: VELVET }}
     >
       {children}
     </button>

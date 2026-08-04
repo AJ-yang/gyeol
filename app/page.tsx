@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { AMBER, AMBER_SOFT, Perforations, ProjectorBeam } from '@/components/cinema'
+import { Perforations, ProjectorBeam, VELVET, VELVET_LINE, VELVET_SOFT, VELVET_TEXT } from '@/components/cinema'
 
 /**
  * 첫 화면.
@@ -35,7 +35,7 @@ export default function LandingPage() {
         <div className="px-6 py-6">
           <span
             className="inline-block rounded-full px-2.5 py-1 text-[11px] font-bold"
-            style={{ backgroundColor: AMBER_SOFT, color: AMBER }}
+            style={{ backgroundColor: VELVET_SOFT, color: VELVET_TEXT }}
           >
             왜 &lsquo;결&rsquo;인가요?
           </span>
@@ -45,18 +45,18 @@ export default function LandingPage() {
           </p>
           <p
             className="mt-4 break-keep border-l-2 pl-3.5 text-xs leading-relaxed text-neutral-400"
-            style={{ borderColor: 'rgba(224,176,100,0.45)' }}
+            style={{ borderColor: VELVET_LINE }}
           >
             장르로는 잡히지 않는 그 방향에 이름을 붙입니다. 25개의 결 중 하나가 나와요.
           </p>
         </div>
       </section>
 
-      {/* Link는 button이 아니라 AmberButton을 못 쓴다. 색과 형태만 맞춘다. */}
+      {/* Link는 button이 아니라 VelvetButton을 못 쓴다. 색과 형태만 맞춘다. */}
       <Link
         href="/pick/"
-        className="mt-8 w-full max-w-sm rounded-full px-8 py-4 text-lg font-bold text-black transition hover:brightness-110 active:scale-[0.99]"
-        style={{ backgroundColor: AMBER }}
+        className="mt-8 w-full max-w-sm rounded-full px-8 py-4 text-lg font-bold text-white transition hover:brightness-110 active:scale-[0.99]"
+        style={{ backgroundColor: VELVET }}
       >
         시작하기
       </Link>

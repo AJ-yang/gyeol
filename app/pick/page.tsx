@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Duel } from '@/components/Duel'
-import { AMBER } from '@/components/cinema'
+import { VELVET, VELVET_TEXT } from '@/components/cinema'
 import { RoundIntro } from '@/components/RoundIntro'
 import { WorkGrid } from '@/components/WorkGrid'
 import { nextDuel } from '@/lib/gyeol/duel'
@@ -186,10 +186,10 @@ export default function PickPage() {
         <p className="break-keep text-sm text-neutral-400">재미있게 본 작품을 모두 골라주세요</p>
         <div className="mt-2 flex items-center gap-3">
           {/*
-            고른 편수만 앰버로 짚는다. 이 화면의 주인공은 포스터라 배경이나
+            고른 편수만 커튼색으로 짚는다. 이 화면의 주인공은 포스터라 배경이나
             테두리까지 물들이면 작품이 죽는다. 진행 상태 하나만 눈에 띄면 된다.
           */}
-          <span className="shrink-0 text-lg font-bold" style={{ color: AMBER }}>
+          <span className="shrink-0 text-lg font-bold" style={{ color: VELVET_TEXT }}>
             {picks.length}편
           </span>
           {remaining > 0 ? (
@@ -203,8 +203,8 @@ export default function PickPage() {
               <button
                 onClick={() => setStage('duelIntro')}
                 disabled={catalog === null}
-                className="ml-auto shrink-0 rounded-full px-5 py-2 font-bold text-black transition hover:brightness-110 disabled:opacity-50"
-                style={{ backgroundColor: AMBER }}
+                className="ml-auto shrink-0 rounded-full px-5 py-2 font-bold text-white transition hover:brightness-110 disabled:opacity-50"
+                style={{ backgroundColor: VELVET }}
               >
                 {catalog === null ? '준비 중…' : '다음'}
               </button>
@@ -226,7 +226,7 @@ export default function PickPage() {
             catalog === null ? '검색 준비 중…' : '드라마·영화 제목으로 검색해서 추가'
           }
           className="mt-2 w-full rounded-full bg-neutral-900 px-4 py-2.5 text-sm outline-none placeholder:text-neutral-500 focus:ring-2 disabled:opacity-60"
-          style={{ ["--tw-ring-color" as string]: 'rgba(224,176,100,0.55)' }}
+          style={{ ["--tw-ring-color" as string]: 'rgba(239,90,99,0.55)' }}
         />
       </header>
 
