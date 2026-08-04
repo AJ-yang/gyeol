@@ -30,6 +30,14 @@ const OVERVIEW_LIMIT = 400
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
+/**
+ * 한국에서 구독으로 볼 수 있는 곳.
+ *
+ * 대여·구매는 싣지 않는다. "돈 내면 볼 수 있다"는 거의 모든 작품에 해당해서
+ * 신호가 되지 못한다. 구독은 이미 내고 있는 것이라 바로 볼 수 있다는 뜻이다.
+ */
+type TmdbProvider = { provider_id: number; provider_name: string; logo_path: string | null }
+
 type TmdbDetail = {
   overview?: string
   vote_average?: number
@@ -45,6 +53,33 @@ function trim(text: string): string {
   const cut = clean.slice(0, OVERVIEW_LIMIT)
   const stop = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('다. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '))
   return (stop > OVERVIEW_LIMIT * 0.6 ? cut.slice(0, stop + 1) : cut.trimEnd()) + '…'
+}
+
+/**
+ * 같은 서비스의 변종을 하나로 묶는다.
+ *
+ * TMDB는 "Netflix"와 "Netflix Standard with Ads"를 다른 제공처로 준다. 실측
+ * 표본에서 넷플릭스 31편 중 29편이 광고 요금제로도 잡혔다. 그대로 두면 로고가
+ * 두 번 뜬다. "Amazon Channel"·"Apple TV Channel" 같은 재판매 채널도 같다.
+ */
+function canonicalName(name: string): string {
+  return name
+    .replace(/\s*(Standard|Premium|Basic)?\s*with Ads$/i, '')
+    .replace(/\s+(Amazon|Apple TV)\s+Channel$/i, '')
+    .trim()
+}
+
+async function providersOf(media: 0 | 1, id: number, attempt = 0): Promise<TmdbProvider[]> {
+  const path = media === 0 ? 'movie' : 'tv'
+  const url = `https://api.themoviedb.org/3/${path}/${id}/watch/providers?api_key=${TMDB_API_KEY}`
+  const response = await fetch(url)
+  if (response.status === 429 && attempt < 3) {
+    await sleep(RETRY_DELAY_MS)
+    return providersOf(media, id, attempt + 1)
+  }
+  if (!response.ok) return []
+  const data = (await response.json()) as { results?: { KR?: { flatrate?: TmdbProvider[] } } }
+  return data.results?.KR?.flatrate ?? []
 }
 
 async function detailOf(
@@ -116,6 +151,55 @@ async function main() {
   }
   if (empty.length > 0) process.stderr.write('\n')
 
+  /*
+    한국 구독 제공처를 모은다.
+
+    PRD는 제공처를 명시적으로 뺐다. 근거는 "제공처는 한 달 단위로 바뀌는데
+    정적 배포라 틀린 '넷플릭스에 있음'은 없는 것보다 나쁘다"였다. 그 우려는
+    지금도 맞다. 그래서 값과 함께 **받은 날짜**를 저장하고 화면에 같이
+    보여준다 — 날짜가 붙은 정보는 낡아도 거짓말이 되지 않는다.
+  */
+  const providerNames = new Map<number, string>()
+  const providerLogos = new Map<number, string>()
+  let withProvider = 0
+  for (let i = 0; i < works.length; i += CONCURRENCY) {
+    const batch = works.slice(i, i + CONCURRENCY)
+    const results = await Promise.all(batch.map((w) => providersOf(w.m, w.i)))
+    batch.forEach((work, index) => {
+      const detail = details.get(workKey(work))
+      if (detail === undefined) return
+      const ids: number[] = []
+      for (const p of results[index]) {
+        const name = canonicalName(p.provider_name)
+        // 변종을 묶으면 id가 여럿이므로 이름 기준으로 대표 id를 하나 고른다.
+        const known = [...providerNames.entries()].find(([, n]) => n === name)
+        const id = known ? known[0] : p.provider_id
+        if (!known) {
+          providerNames.set(id, name)
+          if (p.logo_path) providerLogos.set(id, p.logo_path)
+        }
+        if (!ids.includes(id)) ids.push(id)
+      }
+      if (ids.length > 0) {
+        detail.w = ids
+        withProvider += 1
+      }
+    })
+    process.stderr.write(`\r  제공처 ${Math.min(i + CONCURRENCY, works.length)}/${works.length}`)
+  }
+  process.stderr.write('\n')
+
+  writeFileSync(
+    'public/providers.json',
+    JSON.stringify({
+      // 화면에 "2026년 8월 기준"으로 찍는다.
+      at: new Date().toISOString().slice(0, 7),
+      list: Object.fromEntries(
+        [...providerNames].map(([id, name]) => [id, { n: name, l: providerLogos.get(id) ?? '' }]),
+      ),
+    }),
+  )
+
   // 청크로 나눠 쓴다. 매번 통째로 지우고 다시 써야 지난 실행의 잔재가 안 남는다.
   rmSync('public/details', { recursive: true, force: true })
   mkdirSync('public/details', { recursive: true })
@@ -145,6 +229,7 @@ async function main() {
   console.log(`상세 ${details.size}건 → public/details/ (${CHUNK_COUNT}개 청크)`)
   console.log(`  조회 실패 ${failed}건 / 한국어 줄거리 없어 영어로 메운 것 ${filled}건`)
   console.log(`  끝내 줄거리 없는 작품 ${noOverview}건 (${((100 * noOverview) / Math.max(details.size, 1)).toFixed(1)}%)`)
+  console.log(`  한국 구독으로 볼 수 있는 작품 ${withProvider}건 (${((100 * withProvider) / Math.max(details.size, 1)).toFixed(1)}%) / 제공처 ${providerNames.size}종`)
   console.log(`  전체 raw ${(raw / 1024 / 1024).toFixed(1)}MB / gzip ${(gzip / 1024).toFixed(0)}KB`)
   console.log(`  청크 하나 평균 gzip ${(gzip / CHUNK_COUNT / 1024).toFixed(1)}KB / 최대 ${(biggest / 1024).toFixed(1)}KB`)
 }

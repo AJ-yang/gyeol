@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useDetail } from '@/lib/gyeol/use-detail'
+import { formatMonth, shownProviders, useProviders } from '@/lib/gyeol/use-providers'
 import { GENRE_LABELS, type CatalogEntry } from '@/lib/gyeol/types'
 
 /** 분을 "2시간 12분"으로 읽는다. 132분보다 길이가 바로 와닿는다. */
@@ -34,6 +35,7 @@ export function WorkDetailSheet({
   onClose: () => void
 }) {
   const { detail, loading } = useDetail(work)
+  const providers = useProviders(work !== null)
 
   // 열려 있는 동안 Esc로 닫고, 뒤 화면이 같이 스크롤되지 않게 막는다.
   useEffect(() => {
@@ -55,6 +57,7 @@ export function WorkDetailSheet({
   const genres = work.g.map((index) => GENRE_LABELS[index]).filter(Boolean)
   const runtime = runtimeLabel(detail?.r ?? 0)
   const tmdbUrl = `https://www.themoviedb.org/${work.m === 0 ? 'movie' : 'tv'}/${work.i}`
+  const watchable = shownProviders(detail?.w, providers)
 
   return (
     <div
@@ -111,6 +114,45 @@ export function WorkDetailSheet({
         </div>
 
         {/*
+          어디서 볼 수 있는지.
+
+          **날짜를 함께 적는다.** 제공처는 한 달 단위로 바뀌는데 이 사이트는
+          정적 배포라 다시 굽기 전까지 값이 고정된다. PRD가 제공처를 뺐던
+          이유가 그것이었다 — 틀린 "넷플릭스에 있음"은 없는 것보다 나쁘다.
+          날짜가 붙으면 낡아도 거짓말이 되지는 않고, 지금 확인할 길도 함께 준다.
+
+          대여·구매는 싣지 않는다. 거의 모든 작품에 해당해서 신호가 못 된다.
+        */}
+        {watchable.length > 0 && providers !== null && (
+          <div className="mt-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {watchable.map((p) => (
+                <span
+                  key={p.id}
+                  className="flex items-center gap-2 rounded-lg bg-white/10 py-1.5 pr-3 pl-1.5"
+                >
+                  {p.logo !== '' && (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={`https://image.tmdb.org/t/p/w92${p.logo}`}
+                      alt=""
+                      className="h-6 w-6 rounded"
+                    />
+                  )}
+                  <span className="text-xs text-neutral-200">{p.name}</span>
+                </span>
+              ))}
+            </div>
+            <p className="mt-2 break-keep text-xs text-neutral-600">
+              {formatMonth(providers.at)} 기준 구독으로 볼 수 있는 곳이에요. 바뀌었을 수 있으니
+              <a href={tmdbUrl} target="_blank" rel="noreferrer" className="ml-1 underline">
+                지금 확인
+              </a>
+            </p>
+          </div>
+        )}
+
+        {/*
           왜 이게 떴는지 알려준다. 근거 없는 추천은 안 믿게 된다.
 
           "「제목」과 닿아 있어요"처럼 조사를 붙이지 않는다. 와/과는 앞말의
@@ -141,6 +183,13 @@ export function WorkDetailSheet({
             닫기
           </button>
         </div>
+
+        {/* TMDB의 제공처 데이터는 JustWatch가 준다. 표기가 약관 조건이다. */}
+        {watchable.length > 0 && (
+          <p className="mt-3 text-center text-[11px] text-neutral-700">
+            시청 가능 정보 제공: JustWatch
+          </p>
+        )}
       </div>
     </div>
   )

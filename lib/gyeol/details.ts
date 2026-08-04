@@ -21,6 +21,8 @@ export type WorkDetail = {
   r: number
   /** 드라마의 시즌 수. 영화면 없다 */
   s?: number
+  /** 한국에서 구독으로 볼 수 있는 곳(제공처 id). 없으면 필드 자체가 없다 */
+  w?: number[]
 }
 
 export type DetailChunk = Record<string, WorkDetail>
