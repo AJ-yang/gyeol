@@ -33,7 +33,7 @@ export function readReturn(params: URLSearchParams): ReturnTo | null {
 }
 
 /**
- * 공유에 실을 완전한 주소.
+ * 앱 안의 경로를 공유 가능한 완전한 주소로 만든다.
  *
  * `navigator.share`에 넘기려면 상대 경로로는 안 된다. 받는 쪽에서 누를 수 있는
  * 주소여야 하므로 출처와 basePath를 앞에 붙인다.
@@ -41,7 +41,12 @@ export function readReturn(params: URLSearchParams): ReturnTo | null {
  * 슬래시가 겹치지 않게 다듬는다. `https://a.io/` + `/gyeol/`이 그대로 이어지면
  * `//r/...`이 되어 링크가 죽는다.
  */
-export function absoluteResultHref(origin: string, basePath: string, back: ReturnTo): string {
+export function absoluteHref(origin: string, basePath: string, path: string): string {
   const base = `${origin.replace(/\/+$/, '')}/${basePath.replace(/^\/+|\/+$/g, '')}`
-  return `${base.replace(/\/+$/, '')}${returnHref(back)}`
+  return `${base.replace(/\/+$/, '')}${path}`
+}
+
+/** 공유에 실을 결과 주소. */
+export function absoluteResultHref(origin: string, basePath: string, back: ReturnTo): string {
+  return absoluteHref(origin, basePath, returnHref(back))
 }
