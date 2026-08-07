@@ -3,19 +3,23 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { DecisivePick } from '@/components/DecisivePick'
 import { GyeolBanner } from '@/components/GyeolBanner'
 import { GyeolEssay } from '@/components/GyeolEssay'
 import { ShareCardButton } from '@/components/ShareCardButton'
+import { ShareLinkButton } from '@/components/ShareLinkButton'
 import { WorkDetailSheet } from '@/components/WorkDetailSheet'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
-import { absoluteResultHref, readReturn, returnHref } from '@/lib/gyeol/back-link'
+import { absoluteHref, absoluteResultHref, readReturn, returnHref } from '@/lib/gyeol/back-link'
 import { breakdown } from '@/lib/gyeol/breakdown'
+import { decisivePick } from '@/lib/gyeol/decisive'
 import { recommendationSources } from '@/lib/gyeol/details'
 import { matchGyeol } from '@/lib/gyeol/match'
 import { decodePicks } from '@/lib/gyeol/payload'
 import { recommend } from '@/lib/gyeol/recommend'
 import { useCatalog } from '@/lib/gyeol/use-catalog'
 import { usePickRecommendations } from '@/lib/gyeol/use-detail'
+import { inviteHref } from '@/lib/gyeol/vs-link'
 import { workKey, type CatalogEntry, type Gyeol } from '@/lib/gyeol/types'
 
 const RECOMMEND_COUNT = 10
@@ -75,8 +79,22 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
 
     const scores = matchGyeol(picks, catalog, GYEOL_TYPES)
     const gyeol = GYEOL_TYPES.find((g) => g.id === scores[0].id)!
+
+    // 판정을 가른 한 편. 없을 수도 있고, 그때는 그 사실을 보여준다.
+    const found = decisivePick(picks, catalog, GYEOL_TYPES)
+    const without = found === null ? undefined : GYEOL_TYPES.find((g) => g.id === found.without)
+    const decisive =
+      found !== null && without !== undefined ? { work: found.work, without } : null
+
     // 공유 카드에 들어갈 상위 3개. 1위만 보여주면 견줄 것이 없다.
-    return { broken: false as const, gyeol, picks, payload, rows: breakdown(scores, GYEOL_TYPES, 3) }
+    return {
+      broken: false as const,
+      gyeol,
+      picks,
+      payload,
+      decisive,
+      rows: breakdown(scores, GYEOL_TYPES, 3),
+    }
   }, [catalog, payload])
 
   // 훅은 조건부로 못 부르므로, 아직 결과가 아닐 때는 빈 배열을 넘긴다.
@@ -198,6 +216,12 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
         back={{ gyeolId: state.gyeol.id, payload: state.payload }}
       />
 
+      {/*
+        결 이름은 25명이 나눠 갖지만 이 칸은 그 사람의 선택에서만 나온다.
+        결과가 남의 이야기처럼 읽히는 것을 막는 자리라 해설 바로 뒤에 둔다.
+      */}
+      <DecisivePick decisive={state.decisive} gyeol={state.gyeol} onOpen={setOpen} />
+
       <section>
         <h2 className="mb-3 text-sm font-bold text-neutral-400">당신이 고른 {state.picks.length}편</h2>
         <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-8">
@@ -221,6 +245,36 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
             ))}
           </div>
         )}
+      </section>
+
+      {/*
+        카드 공유와 다른 행동이라 칸을 나눈다. 카드는 "내 결과를 보여주는"
+        것이고 이쪽은 **상대가 눌러야 완성되는** 초대장이다. 한 줄에 같이 두면
+        둘 다 그냥 공유 버튼으로 보여 하나만 눌린다.
+      */}
+      <section
+        className="rounded-2xl border p-5 text-center"
+        style={{
+          borderColor: `hsla(${state.gyeol.hue}, 72%, 60%, 0.25)`,
+          backgroundColor: `hsla(${state.gyeol.hue}, 72%, 40%, 0.07)`,
+        }}
+      >
+        <h2 className="text-base font-bold">친구와 궁합 보기</h2>
+        <p className="mx-auto mt-2 mb-4 max-w-sm break-keep text-sm leading-relaxed text-neutral-400">
+          링크를 받은 친구가 자기 결을 만들면 둘의 궁합이 나와요. 겹친 작품과 서로에게 보낼 작품도
+          같이요.
+        </p>
+        <ShareLinkButton
+          url={absoluteHref(
+            typeof location === 'undefined' ? '' : location.origin,
+            process.env.NEXT_PUBLIC_BASE_PATH ?? '',
+            inviteHref(state.payload),
+          )}
+          text={`내 결은 「${state.gyeol.name}」이래요. 우리 궁합 볼래요?`}
+          label="궁합 링크 보내기"
+          done="링크를 복사했어요. 친구에게 붙여넣어 보내세요."
+          className="rounded-full bg-white px-6 py-3 font-bold text-black transition hover:bg-neutral-200"
+        />
       </section>
 
       {/*
