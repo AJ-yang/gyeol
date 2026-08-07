@@ -18,6 +18,7 @@ export function ShareLinkButton({
   text,
   label,
   done,
+  onShared,
   className = '',
   style,
 }: {
@@ -27,6 +28,13 @@ export function ShareLinkButton({
   label: string
   /** 복사로 떨어졌을 때 보여줄 안내 */
   done: string
+  /**
+   * 실제로 내보낸 뒤에만 불린다.
+   *
+   * 공유 시트를 열었다가 닫은 경우는 부르지 않는다 — 그것까지 세면 공유율이
+   * 부푼다. 이 컴포넌트는 무엇을 세는지 모르고, 부르는 쪽이 정한다.
+   */
+  onShared?: (how: 'share' | 'copy') => void
   className?: string
   style?: React.CSSProperties
 }) {
@@ -39,6 +47,7 @@ export function ShareLinkButton({
     if (navigator.canShare?.(payload)) {
       try {
         await navigator.share(payload)
+        onShared?.('share')
       } catch {
         // 사용자가 공유 시트를 닫았다. 복사로 넘어가지 않고 멈춘다.
       }
@@ -48,6 +57,7 @@ export function ShareLinkButton({
 
     try {
       await navigator.clipboard.writeText(url)
+      onShared?.('copy')
       setState('copied')
       setTimeout(() => setState('idle'), 4000)
     } catch {

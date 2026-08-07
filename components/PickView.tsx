@@ -10,6 +10,7 @@ import { nextDuel } from '@/lib/gyeol/duel'
 import { searchWorks } from '@/lib/gyeol/grid'
 import { matchGyeol } from '@/lib/gyeol/match'
 import { encodePicks } from '@/lib/gyeol/payload'
+import { track } from '@/lib/gyeol/track'
 import { matchUpHref } from '@/lib/gyeol/vs-link'
 import { makeRng, seededShuffle } from '@/lib/rng'
 import { GYEOL_TYPES } from '@/data/gyeol-types'
@@ -163,7 +164,11 @@ export function PickView() {
         ]}
         note="여기서 고른 것이 기준선이 됩니다. 안 본 작품은 그냥 넘기세요 — 모르는 걸 고르면 결이 흐려져요."
         action="작품 고르러 가기"
-        onStart={() => setStage('grid')}
+        // 완주율의 분모. 랜딩 조회가 아니라 실제로 고르기 시작한 사람을 센다.
+        onStart={() => {
+          track('start', { mode: vs === null ? 'solo' : 'vs' })
+          setStage('grid')
+        }}
       />
     )
   }
@@ -226,7 +231,12 @@ export function PickView() {
               <span className="break-keep text-sm text-neutral-500">더 고를수록 정확해져요</span>
               {/* 2라운드는 색인이 있어야 돈다. 보통은 고르는 사이에 도착한다. */}
               <button
-                onClick={() => setStage('duelIntro')}
+                onClick={() => {
+                  // 몇 편에서 멈추는지가 곧 그리드 길이와 최소 선택 수를 다시
+                  // 정할 근거가 된다.
+                  track('round1_done', { picks: picks.length })
+                  setStage('duelIntro')
+                }}
                 disabled={catalog === null}
                 className="ml-auto shrink-0 rounded-full px-5 py-2 font-bold text-white transition hover:brightness-110 disabled:opacity-50"
                 style={{ backgroundColor: VELVET }}

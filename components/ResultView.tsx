@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { DecisivePick } from '@/components/DecisivePick'
@@ -19,6 +19,7 @@ import { decodePicks } from '@/lib/gyeol/payload'
 import { recommend } from '@/lib/gyeol/recommend'
 import { useCatalog } from '@/lib/gyeol/use-catalog'
 import { usePickRecommendations } from '@/lib/gyeol/use-detail'
+import { track } from '@/lib/gyeol/track'
 import { inviteHref } from '@/lib/gyeol/vs-link'
 import { workKey, type CatalogEntry, type Gyeol } from '@/lib/gyeol/types'
 
@@ -96,6 +97,20 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
       rows: breakdown(scores, GYEOL_TYPES, 3),
     }
   }, [catalog, payload])
+
+  /*
+    완주율의 분자이자 공유율의 분모. 결과가 실제로 그려진 순간에만 센다.
+
+    결 소개(`?p=` 없음)와 망가진 주소는 빼야 한다 — 남의 링크를 눌러 소개만
+    본 사람까지 세면 완주율이 부풀고, 그 숫자로는 아무 판단도 못 한다.
+  */
+  const done = state !== null && !('landing' in state) && !state.broken
+  const doneGyeol = done ? state.gyeol.id : null
+  const donePicks = done ? state.picks.length : 0
+  useEffect(() => {
+    if (doneGyeol === null) return
+    track('result', { gyeol: doneGyeol, picks: donePicks })
+  }, [doneGyeol, donePicks])
 
   // 훅은 조건부로 못 부르므로, 아직 결과가 아닐 때는 빈 배열을 넘긴다.
   // 고른 작품이 든 청크만 받아 추천을 모은다 — 예전에는 430KB를 통째로 받았다.
@@ -280,6 +295,7 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
           text={`내 결은 「${state.gyeol.name}」이래요. 우리 궁합 볼래요?`}
           label="궁합 링크 보내기"
           done="링크를 복사했어요. 친구에게 붙여넣어 보내세요."
+          onShared={(how) => track('share_vs', { kind: 'invite', how })}
           className="rounded-full bg-white px-6 py-3 font-bold text-black transition hover:bg-neutral-200"
         />
       </section>
