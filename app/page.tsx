@@ -62,6 +62,14 @@ export default function LandingPage() {
       </Link>
 
       <p className="mt-4 text-xs text-neutral-600">약 1분 소요 · 로그인 없음</p>
+
+      {/*
+        해보기 전에 무엇이 나오는지 보고 싶은 사람이 있다. 시작 버튼과 경쟁하지
+        않도록 작게 두되, 없으면 25개가 있다는 것 자체를 모르고 나간다.
+      */}
+      <Link href="/gyeols/" className="mt-6 text-sm text-neutral-400 underline">
+        25개 결 먼저 둘러보기
+      </Link>
     </main>
   )
 }

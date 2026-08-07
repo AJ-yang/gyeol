@@ -160,6 +160,13 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
           <p className="break-keep text-sm text-neutral-500">
             {back === null ? '1분이면 나와요' : '고른 작품을 바꿔서 다시 볼 수 있어요'}
           </p>
+          {/*
+            결 하나만 보고 들어온 사람에게 나머지 24개로 가는 길을 준다.
+            이 화면은 검색이나 남의 링크로 닿는 자리라 여기가 입구가 된다.
+          */}
+          <Link href="/gyeols/" className="mt-1 text-sm text-neutral-400 underline">
+            25개 결 전부 보기
+          </Link>
         </div>
       </>
     )
@@ -286,6 +293,9 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
           gyeol={state.gyeol}
           rows={state.rows}
           picks={state.picks}
+          // 세로가 긴 규격에만 실린다. 카드에서 가장 개인적인 한 줄이라
+          // 자리가 나는 쪽에서는 넣는다.
+          decisive={state.decisive?.work.t}
           // 이미지와 함께 보낼 주소. 서버에서는 origin을 알 수 없으므로 빈 값이
           // 되지만, 이 버튼은 클라이언트에서만 눌린다.
           shareUrl={absoluteResultHref(
@@ -294,9 +304,14 @@ export function ResultView({ gyeolId }: { gyeolId?: string }) {
             { gyeolId: state.gyeol.id, payload: state.payload },
           )}
         />
-        <Link href="/pick/" className="text-sm text-neutral-400 underline">
-          다시 하기
-        </Link>
+        <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-neutral-400">
+          <Link href="/pick/" className="underline">
+            다시 하기
+          </Link>
+          <Link href="/gyeols/" className="underline">
+            25개 결 전부 보기
+          </Link>
+        </div>
       </div>
 
       {/*

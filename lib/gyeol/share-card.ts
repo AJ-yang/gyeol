@@ -3,27 +3,75 @@ import type { BreakdownRow } from './breakdown'
 import type { CatalogEntry, Gyeol } from './types'
 
 /**
- * 공유 카드 크기. 4:5 세로다.
+ * 공유 카드 규격.
  *
- * 카카오톡 대화방에서 세로 카드가 가장 크게 보이고 인스타그램 피드에도 그대로
- * 올라간다. OG 이미지(1200×630 가로)와는 용도가 다르므로 별개로 둔다.
+ * 두 벌을 만드는 이유는 **보내는 곳마다 크게 보이는 비율이 다르기 때문이다.**
+ * 카카오톡 대화방은 4:5가 가장 크게 잡히고, 인스타그램 스토리는 9:16이라
+ * 4:5를 올리면 위아래에 검은 띠가 남아 초라해진다. 카드가 이 서비스의 유일한
+ * 유통 경로라 규격이 안 맞는 것은 그대로 유실이다.
+ *
+ * **폭은 두 규격이 같다(1080).** 그래서 여백·포스터 크기·비율 막대가 전부
+ * 그대로고, 달라지는 것은 세로 길이와 포스터 줄 수뿐이다. 세로로 남는 자리에
+ * 무엇을 더 실을지도 여기서 정한다.
  */
-export const CARD_WIDTH = 1080
-export const CARD_HEIGHT = 1350
+export type CardFormat = 'chat' | 'story'
+
+export type CardSpec = {
+  width: number
+  height: number
+  /** 포스터 격자의 줄 수 */
+  posterRows: number
+  /**
+   * 결정적인 한 편을 실을 자리가 있는가.
+   *
+   * 4:5는 비율 막대와 포스터 격자를 넣고 나면 18px밖에 안 남아서 못 싣는다.
+   * 억지로 끼우면 링크를 덮는다.
+   */
+  showsDecisive: boolean
+  /** 규격 고르는 자리에 뜨는 이름 */
+  label: string
+  /** 어디에 올리는 규격인지 */
+  hint: string
+  fileName: string
+}
+
+export const CARD_FORMATS: Record<CardFormat, CardSpec> = {
+  chat: {
+    width: 1080,
+    height: 1350,
+    posterRows: 2,
+    showsDecisive: false,
+    label: '4:5',
+    hint: '카카오톡',
+    fileName: 'gyeol.png',
+  },
+  story: {
+    width: 1080,
+    height: 1920,
+    posterRows: 3,
+    showsDecisive: true,
+    label: '9:16',
+    hint: '인스타 스토리',
+    fileName: 'gyeol-story.png',
+  },
+}
 
 const PADDING = 80
+const CARD_WIDTH = CARD_FORMATS.chat.width
 const CONTENT_WIDTH = CARD_WIDTH - PADDING * 2
 const CENTER = CARD_WIDTH / 2
 
-/** 포스터 격자. 6열 2행이면 12편이 들어간다. */
+/** 포스터 격자. 줄 수는 규격이 정한다 */
 const POSTER_COLUMNS = 6
-const POSTER_ROWS = 2
 const POSTER_GAP = 12
 const POSTER_WIDTH = (CONTENT_WIDTH - POSTER_GAP * (POSTER_COLUMNS - 1)) / POSTER_COLUMNS
 const POSTER_HEIGHT = POSTER_WIDTH * 1.5
 const POSTER_RADIUS = 10
 
-export const MAX_POSTERS = POSTER_COLUMNS * POSTER_ROWS
+/** 그 규격에 들어가는 포스터 수. 고른 작품을 이만큼만 그린다 */
+export function maxPosters(spec: CardSpec): number {
+  return POSTER_COLUMNS * spec.posterRows
+}
 
 /**
  * 비율 막대. 이름·트랙·퍼센트를 세 칸으로 나눈다.
@@ -40,6 +88,12 @@ const TRACK_WIDTH = CONTENT_WIDTH - NAME_COLUMN - PERCENT_COLUMN
 const TRACK_HEIGHT = 26
 const TRACK_RADIUS = TRACK_HEIGHT / 2
 
+/** 비율 막대가 없을 때 그 아래 내용이 시작하는 자리 */
+const CONTENT_TOP = 452
+
+/** 결정적인 한 편이 차지하는 세로 길이 */
+const DECISIVE_HEIGHT = 130
+
 /**
  * 앱과 같은 폰트 스택을 쓴다. 웹폰트가 없으므로 로딩을 기다릴 필요가 없다.
  * 스캐폴드 기본값인 Arial에는 한글 글리프가 없어 폴백으로 밀린다.
@@ -47,11 +101,14 @@ const TRACK_RADIUS = TRACK_HEIGHT / 2
 const FONT = '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", Pretendard, "Segoe UI", "Malgun Gothic", system-ui, sans-serif'
 
 export type ShareCardData = {
+  format: CardFormat
   gyeol: Gyeol
   /** 상위 결 비율. 비어 있으면 막대를 그리지 않는다 */
   rows: BreakdownRow[]
-  /** 고른 작품. 앞에서부터 최대 MAX_POSTERS편만 그린다 */
+  /** 고른 작품. 앞에서부터 규격이 허용하는 만큼만 그린다 */
   posters: HTMLImageElement[]
+  /** 판정을 가른 한 편의 제목. 자리가 있는 규격에서만 실린다 */
+  decisive?: string
   siteUrl: string
 }
 
@@ -120,22 +177,23 @@ function pathRect(
  * 공유할 이유가 생긴다.
  */
 export function drawShareCard(context: CanvasRenderingContext2D, data: ShareCardData): void {
+  const spec = CARD_FORMATS[data.format]
   const { hue } = data.gyeol
 
   // 배경: 결 고유색의 세로 그라데이션
-  const background = context.createLinearGradient(0, 0, 0, CARD_HEIGHT)
+  const background = context.createLinearGradient(0, 0, 0, spec.height)
   background.addColorStop(0, tone(hue, 24))
   background.addColorStop(0.55, tone(hue, 11))
   background.addColorStop(1, tone(hue, 6))
   context.fillStyle = background
-  context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT)
+  context.fillRect(0, 0, spec.width, spec.height)
 
   // 이모지 뒤의 부드러운 빛. 상단에 무게를 실어 시선을 잡는다.
   const glow = context.createRadialGradient(CENTER, 180, 0, CENTER, 180, 460)
   glow.addColorStop(0, tone(hue, 62, 0.35))
   glow.addColorStop(1, tone(hue, 62, 0))
   context.fillStyle = glow
-  context.fillRect(0, 0, CARD_WIDTH, 640)
+  context.fillRect(0, 0, spec.width, 640)
 
   context.textBaseline = 'top'
   context.textAlign = 'center'
@@ -164,7 +222,7 @@ export function drawShareCard(context: CanvasRenderingContext2D, data: ShareCard
   context.fillText(phrase, CENTER, 362)
 
   // 비율 막대
-  let y = 452
+  let y = CONTENT_TOP
   for (const row of data.rows) {
     // 결 이름. 칸을 넘치면 글자를 줄인다.
     const rowSize = fitFontSize(NAME_COLUMN - 16, 28, 20, (size) => {
@@ -197,16 +255,45 @@ export function drawShareCard(context: CanvasRenderingContext2D, data: ShareCard
     y += ROW_HEIGHT + ROW_GAP
   }
 
+  let contentTop = (data.rows.length > 0 ? y : CONTENT_TOP) + 34
+
+  /*
+    결정적인 한 편. 세로가 긴 규격에만 실린다.
+
+    결 이름은 25명이 나눠 갖지만 이 제목은 그 사람의 선택에서만 나온다.
+    카드를 받은 사람이 "나도 저거 봤는데"로 반응하는 지점이기도 하다.
+  */
+  if (spec.showsDecisive && data.decisive !== undefined) {
+    context.textAlign = 'center'
+    context.font = `28px ${FONT}`
+    context.fillStyle = tone(hue, 74)
+    context.fillText('이 한 편이 갈랐어요', CENTER, contentTop)
+
+    const title = `「${data.decisive}」`
+    const titleSize = fitFontSize(CONTENT_WIDTH, 52, 30, (size) => {
+      context.font = `bold ${size}px ${FONT}`
+      return context.measureText(title).width
+    })
+    context.font = `bold ${titleSize}px ${FONT}`
+    context.fillStyle = '#ffffff'
+    context.fillText(title, CENTER, contentTop + 46)
+
+    contentTop += DECISIVE_HEIGHT
+  }
+
   // 포스터 격자. 마지막 줄이 덜 차도 가운데 정렬해 균형을 맞춘다.
   //
-  // 세로 위치는 막대 아래와 링크 위 사이의 한가운데로 잡는다. 위에서만 쌓으면
-  // 아래에 큰 구멍이 남고, 아래에서만 역산하면 막대와 붙는다.
-  const posters = data.posters.slice(0, MAX_POSTERS)
-  const gridHeight = POSTER_HEIGHT * POSTER_ROWS + POSTER_GAP
-  const spaceTop = (data.rows.length > 0 ? y : 452) + 34
-  const spaceBottom = CARD_HEIGHT - PADDING - 150
-  const gridTop = Math.max(spaceTop, spaceTop + (spaceBottom - spaceTop - gridHeight) / 2)
-  for (let row = 0; row < POSTER_ROWS; row++) {
+  // 세로 위치는 위 내용과 링크 사이의 한가운데로 잡는다. 위에서만 쌓으면
+  // 아래에 큰 구멍이 남고, 아래에서만 역산하면 위와 붙는다.
+  const posters = data.posters.slice(0, maxPosters(spec))
+  // **실제로 그릴 줄 수로 높이를 잡는다.** 규격이 허용하는 최대 줄 수로
+  // 잡으면, 다섯 편만 고른 사람의 카드에서 안 그린 줄만큼의 빈칸이 격자
+  // 아래에 그대로 남는다. 세로가 긴 규격일수록 그 구멍이 커진다.
+  const usedRows = Math.min(spec.posterRows, Math.ceil(posters.length / POSTER_COLUMNS))
+  const gridHeight = POSTER_HEIGHT * usedRows + POSTER_GAP * Math.max(usedRows - 1, 0)
+  const spaceBottom = spec.height - PADDING - 150
+  const gridTop = Math.max(contentTop, contentTop + (spaceBottom - contentTop - gridHeight) / 2)
+  for (let row = 0; row < usedRows; row++) {
     const inRow = posters.slice(row * POSTER_COLUMNS, (row + 1) * POSTER_COLUMNS)
     if (inRow.length === 0) break
     const rowWidth = inRow.length * POSTER_WIDTH + (inRow.length - 1) * POSTER_GAP
@@ -227,7 +314,7 @@ export function drawShareCard(context: CanvasRenderingContext2D, data: ShareCard
   context.textAlign = 'center'
   context.font = `bold 38px ${FONT}`
   context.fillStyle = '#ffffff'
-  context.fillText(data.siteUrl, CENTER, CARD_HEIGHT - PADDING - 96)
+  context.fillText(data.siteUrl, CENTER, spec.height - PADDING - 96)
 
   // TMDB 고지. 이미지가 사이트 밖으로 나가므로 여기 박혀 있어야 약관을 지킨다.
   context.font = `24px ${FONT}`
@@ -235,6 +322,6 @@ export function drawShareCard(context: CanvasRenderingContext2D, data: ShareCard
   context.fillText(
     'This product uses the TMDB API but is not endorsed or certified by TMDB.',
     CENTER,
-    CARD_HEIGHT - PADDING - 40,
+    spec.height - PADDING - 40,
   )
 }
