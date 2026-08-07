@@ -36,13 +36,29 @@ npm run dev
 
 산출물(`public/catalog.json`, `public/recommendations.json`)은 재생성 가능하므로 커밋하지 않는다.
 
+## 계측
+
+성공 기준은 공유율과 완주율이다(PRD 1절). 그 두 비율을 만들 수 있을 만큼만 잰다.
+
+```
+완주율 = result    / start(mode=solo)
+         vs_result / start(mode=vs)
+공유율 = (share_card + share_vs) / result
+```
+
+완주율은 `mode`로 갈라서 본다. 친구 링크를 타고 온 사람은 다 고르고 나면 자기 결과가 아니라 궁합 화면으로 가므로 `result`를 내지 않는다 — 나누지 않고 계산하면 완주율이 그만큼 낮게 나온다.
+
+사람을 식별하지 않는다. 로그인도 저장소도 없는 제품이라 여기서 개인을 따라다니면 앞뒤가 안 맞는다. 보내는 것은 위 사건의 발생과, 비율을 읽는 데 필요한 몇 개의 수뿐이다.
+
+`.env.local`의 `NEXT_PUBLIC_GA_ID`가 비어 있으면 **스크립트를 아예 안 받는다.** 브라우저가 추적 거부(DNT)를 켠 경우도 같다. 도구를 바꾸려면 `lib/gyeol/track.ts`의 `send`만 고치면 된다.
+
 ## 배포
 
 ```bash
 npm run deploy:pages
 ```
 
-정적 빌드를 `gh-pages` 브랜치로 강제 푸시한다.
+정적 빌드를 `gh-pages` 브랜치로 강제 푸시한다. **`public/`의 데이터가 그대로 실려 나가므로** 데이터를 다시 굽지 않은 채 배포하면 직전 배포의 값이 유지된다 — 코드만 고쳤을 때는 그것이 맞다.
 
 ---
 

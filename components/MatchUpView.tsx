@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { ShareLinkButton } from '@/components/ShareLinkButton'
@@ -10,6 +10,7 @@ import { GYEOL_TYPES } from '@/data/gyeol-types'
 import { absoluteHref, returnHref } from '@/lib/gyeol/back-link'
 import { matchUp } from '@/lib/gyeol/match-up'
 import { decodePicks } from '@/lib/gyeol/payload'
+import { track } from '@/lib/gyeol/track'
 import { useCatalog } from '@/lib/gyeol/use-catalog'
 import { matchUpHref, pickWithVsHref } from '@/lib/gyeol/vs-link'
 import { workKey, type CatalogEntry, type Gyeol } from '@/lib/gyeol/types'
@@ -135,6 +136,18 @@ export function MatchUpView() {
 
     return { kind: 'match' as const, result, gyeolA, gyeolB, aPayload: a, bPayload: b }
   }, [a, b, catalog])
+
+  /*
+    궁합이 두 사람 것으로 완성된 순간. 초대장만 뜬 것과는 다르다 —
+    이 둘의 차이가 곧 "초대를 받은 사람이 실제로 끝까지 했는가"다.
+  */
+  const matched = state !== null && state.kind === 'match' ? state.result : null
+  const matchedScore = matched?.score ?? null
+  const matchedShared = matched?.shared.length ?? 0
+  useEffect(() => {
+    if (matchedScore === null) return
+    track('vs_result', { score: matchedScore, shared: matchedShared })
+  }, [matchedScore, matchedShared])
 
   if (state === null) {
     return <p className="animate-pulse py-20 text-center text-neutral-500">결을 읽는 중…</p>
@@ -323,6 +336,7 @@ export function MatchUpView() {
           text={`우리 궁합 ${result.score}점이래요`}
           label="궁합 결과 보내기"
           done="링크를 복사했어요. 붙여넣으면 상대도 같은 화면을 봐요."
+          onShared={(how) => track('share_vs', { kind: 'result', how })}
           className="rounded-full bg-white px-6 py-3 font-bold text-black transition hover:bg-neutral-200"
         />
 

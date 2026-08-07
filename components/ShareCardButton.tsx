@@ -9,6 +9,7 @@ import {
   posterUrl,
   type CardFormat,
 } from '@/lib/gyeol/share-card'
+import { track } from '@/lib/gyeol/track'
 import type { BreakdownRow } from '@/lib/gyeol/breakdown'
 import type { CatalogEntry, Gyeol } from '@/lib/gyeol/types'
 
@@ -83,10 +84,12 @@ export function ShareCardButton({
         if (!navigator.canShare?.(payload)) continue
         try {
           await navigator.share(payload)
+          track('share_card', { format, how: 'share' })
           setState('idle')
           return
         } catch {
           // 사용자가 공유 시트를 닫았다. 다음 방법으로 넘어가지 않고 멈춘다.
+          // **세지 않는다** — 열어보고 만 것을 공유로 세면 공유율이 부푼다.
           setState('idle')
           return
         }
@@ -99,6 +102,7 @@ export function ShareCardButton({
       link.href = url
       link.download = spec.fileName
       link.click()
+      track('share_card', { format, how: 'download' })
       // 곧바로 해제하면 브라우저가 blob을 읽기 전에 무효화되어 다운로드가
       // 취소될 수 있다. 한 틱 뒤로 미룬다.
       setTimeout(() => URL.revokeObjectURL(url), 10_000)

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Analytics } from '@/components/Analytics'
 import { Footer } from '@/components/Footer'
 import './globals.css'
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="flex min-h-full flex-col bg-neutral-950 text-white">
         <div className="flex-1">{children}</div>
         <Footer />
+        <Analytics />
       </body>
     </html>
   )
